@@ -1,0 +1,42 @@
+Package: limn
+Type: Package
+Title: A Projection Engine for Distributional Forecasting
+Version: 0.0.0.9000
+Authors@R: person(given = "Craig P.", family = "Hutton",
+                  role = c("aut", "cre", "cph"),
+                  email = "craig.hutton@gmail.com")
+Description: Predictive distributions, forecasts, proper scoring rules,
+    calibration, cross-validation and model comparison for models fitted by
+    'illume'. A prediction is a mixture over draws of the fitted parameters,
+    so its intervals carry the fit's own uncertainty, and every score is
+    computed from that mixture rather than from simulated responses. How the
+    random effects enter a prediction is always named, never assumed: a unit
+    seen in the fit, a new one, a typical one, or the population average.
+    Cross-validation follows the structure of the data, with grouped folds for
+    new units and rolling origins for forecasts, and model comparisons carry
+    standard errors clustered the same way. 'limn' is the third package in a
+    family, after 'illumex' for exploration and 'illume' for inference.
+License: GPL (>= 2)
+Encoding: UTF-8
+Language: en-GB
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.1
+Depends:
+    R (>= 4.1),
+    illume (>= 0.0.8.9001)
+Imports:
+    tinyplot (>= 0.6.1),
+    stats,
+    utils
+Suggests:
+    testthat (>= 3.0.0),
+    scoringRules,
+    hypergeo,
+    sandwich,
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
+Remotes: huttoncp/illume, huttoncp/illumex
+Config/testthat/edition: 3
+URL: https://github.com/huttoncp/limn
+BugReports: https://github.com/huttoncp/limn/issues

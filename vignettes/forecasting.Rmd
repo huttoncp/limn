@@ -1,0 +1,200 @@
+---
+title: "Forecasting series"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Forecasting series}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 4)
+```
+
+This vignette forecasts several series at once: the rows a forecast needs,
+a model whose forecasts carry each series on from where its data end, a
+covariate whose future is not known, fan charts, and totals across series and
+over the horizon. Along the way, a check on the model's trend finds something
+to change, and the change is made.
+
+```{r setup}
+library(limn)
+```
+
+## The data
+
+Six regions report their weekly demand for two years. Demand rises with the
+temperature, grows slowly over time, and each region has runs of high and low
+weeks. The temperature follows the seasons, with runs of warm and cool weeks of
+its own.
+
+```{r data}
+set.seed(2026)
+n_regions <- 6; n_weeks <- 104
+demand <- expand.grid(week = 1:n_weeks, region = factor(sprintf("R%d", 1:n_regions)))
+runs <- function(phi, sd) unlist(lapply(1:n_regions, function(r)
+  as.numeric(stats::arima.sim(list(ar = phi), n_weeks, sd = sd))))
+demand$temp <- round(15 + 8 * sin(2 * pi * demand$week / 52) + runs(0.7, 1.5), 1)
+region_effect <- rnorm(n_regions, 0, 10)
+demand$demand <- round(100 + 0.15 * demand$week + 2 * (demand$temp - 15) +
+                         region_effect[demand$region] + runs(0.8, 2) +
+                         rnorm(nrow(demand), 0, 2), 1)
+```
+
+## The rows a forecast needs
+
+`ilm_future()` builds the next weeks of every region. It copies what does not
+change over time and leaves what does, the temperature, for you to fill in:
+
+```{r future}
+future <- ilm_future(demand, time = "week", group = "region", h = 8, response = "demand")
+head(future, 3)
+```
+
+For a start, fill in a scenario: the temperature's seasonal average, with no
+warm or cool runs.
+
+```{r scenario}
+scenario <- future
+scenario$temp <- round(15 + 8 * sin(2 * pi * scenario$week / 52), 1)
+```
+
+## A first model, and the trend check
+
+A first model has the temperature, a linear trend in time, a level for each
+region, and a first-order autoregressive term, `ilm_ar1()`, for each region's
+runs of weeks. Forecasting with it warns:
+
+```{r trend-ar1}
+fit_ar1 <- illume::ilm_model(demand ~ temp + week + (1 | region), data = demand,
+                             family = "gaussian", ar = illume::ilm_ar1(~ week | region),
+                             verbose = FALSE)
+fc_ar1 <- ilm_forecast(fit_ar1, scenario, nsim = 500)
+```
+
+A trend in the fixed part assumes the growth goes on at the same rate, and,
+in limn's own reasoning, its intervals then leave out any change in that rate.
+The warning names the remedy, citing Hyndman and Athanasopoulos (2021, section
+10.4) for a stochastic trend being safer at longer horizons: a random walk,
+`ilm_rw1()`, which lets each region's level move. Refit with it in place of the
+autoregressive term, and forecast again:
+
+```{r trend-rw1}
+fit <- illume::ilm_model(demand ~ temp + week + (1 | region), data = demand,
+                         family = "gaussian", ar = illume::ilm_rw1(~ week | region),
+                         verbose = FALSE)
+fc_scenario <- ilm_forecast(fit, scenario, nsim = 500)
+```
+
+No warning now. The width of region R1's 90% interval at each horizon shows
+the difference:
+
+```{r widths}
+width_r1 <- function(fc) {
+  a <- as.data.frame(fc)
+  a <- a[a$region == "R1", ]
+  setNames(round(a$upper_0.9 - a$lower_0.9, 1), paste0("h", a$horizon))
+}
+rbind(ar1 = width_r1(fc_ar1), rw1 = width_r1(fc_scenario))
+```
+
+For region R1, under the autoregressive term the intervals stop widening after
+a few weeks; under the random walk they go on widening with the horizon. The
+rest of this vignette uses the random-walk model.
+
+## A covariate whose future is not known
+
+The scenario fixed next weeks' temperatures, so its intervals leave out the
+uncertainty in them. Hyndman and Athanasopoulos (2021, section 10.3) note that
+prediction intervals made that way "do not take into account the uncertainty
+in the forecasts of the predictors". `ilm_covariate_paths()` draws the
+temperature's future from a model of the temperature, one path per draw, and
+the forecast mixes over the paths:
+
+```{r paths}
+fit_temp <- illume::ilm_model(temp ~ illume::ilm_fourier(week, period = 52), data = demand,
+                              family = "gaussian", ar = illume::ilm_ar1(~ week | region),
+                              verbose = FALSE)
+paths <- ilm_covariate_paths(fit_temp, future, nsim = 500)
+fc <- ilm_forecast(fit, paths, nsim = 500)
+rbind(scenario = width_r1(fc_scenario), paths = width_r1(fc))
+```
+
+The temperature model has the seasons, as a Fourier term, and each region's
+runs of warm and cool weeks. With the temperature drawn, region R1's
+intervals are wider at every horizon. In limn's own study of covariates given
+as draws (`studies/findings/covariate_draws.md` in limn's GitHub repository,
+<https://github.com/huttoncp/limn/blob/main/studies/findings/covariate_draws.md>),
+90% intervals for a gaussian outcome made with the covariate's point forecast
+covered only 0.75 to 0.83, against about 0.90 with the covariate given as
+draws.
+
+### Paths from another tool
+
+Paths made elsewhere, such as a weather service's ensemble, come in through
+`ilm_as_draws()`. Here a made-up ensemble of 20 paths stands in for one: a
+data frame with a row per path, region and week.
+
+```{r ensemble}
+ensemble <- do.call(rbind, lapply(1:20, function(k) {
+  e <- future[c("region", "week")]
+  e$temp <- round(15 + 8 * sin(2 * pi * e$week / 52) + rnorm(nrow(e), 0, 2), 1)
+  e$.rep <- k
+  e
+}))
+from_ensemble <- ilm_as_draws(ensemble, future, by = c("region", "week"))
+head(as.data.frame(ilm_forecast(fit, from_ensemble, nsim = 500)), 3)
+```
+
+## The fan chart
+
+```{r fan, fig.height = 6}
+ilm_plot_fan(fc, time = "week", group = "region",
+             history = demand[demand$week > 74, ], response = "demand")
+```
+
+Each panel is one region: its last 30 weeks of demand, then the forecast's
+median as a line, with its central 50%, 80% and 95% intervals as bands. Each
+region starts from its own last weeks, and the bands widen with the horizon.
+
+## Totals
+
+The total over regions is not the sum of the regions' intervals.
+`ilm_aggregate()` adds the forecasts draw by draw, so what the regions share
+within a draw, the parameters of the demand model and of the temperature
+model, carries into the total. The total
+demand each week:
+
+```{r total-week}
+as.data.frame(ilm_aggregate(fc, by = "week"))
+```
+
+And each region's total over the eight weeks, where a region's own path
+carries into its total:
+
+```{r total-region}
+as.data.frame(ilm_aggregate(fc, by = "region"))
+```
+
+Both sets of totals come from the same draws, so the regions' expected totals
+sum to exactly the same grand total as the weeks' do:
+
+```{r coherent}
+c(by_week = sum(as.data.frame(ilm_aggregate(fc, by = "week"))$mean),
+  by_region = sum(as.data.frame(ilm_aggregate(fc, by = "region"))$mean))
+```
+
+## Where next
+
+* `?ilm_forecast` and `?ilm_predict` (its section *Over time*) for how a series
+  is carried forward.
+* `?ilm_covariate_paths` and `?ilm_as_draws` for covariates given as draws.
+* `?ilm_aggregate` for totals and averages.
+* `vignette("limn")` for scoring and comparing forecasts.
+
+## References
+
+Hyndman, R. J. and Athanasopoulos, G. (2021). *Forecasting: Principles and
+Practice*, 3rd edition. OTexts. Section 10.3, "Forecasting", and section 10.4,
+"Stochastic and deterministic trends" (online edition,
+<https://otexts.com/fpp3/>, read 21 October 2026).

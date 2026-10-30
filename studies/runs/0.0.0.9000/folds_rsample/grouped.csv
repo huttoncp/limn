@@ -1,0 +1,10 @@
+"G","K","limn_split_groups.min","limn_split_groups.max","rsample_split_groups.min","rsample_split_groups.max","limn_held_once.min","limn_held_once.max","rsample_held_once.min","rsample_held_once.max","limn_min_groups.min","limn_min_groups.max","limn_max_groups.min","limn_max_groups.max","rsample_min_groups.min","rsample_min_groups.max","rsample_max_groups.min","rsample_max_groups.max"
+10,3,0,0,0,0,1,1,1,1,3,3,4,4,3,3,4,4
+23,3,0,0,0,0,1,1,1,1,7,7,8,8,7,7,8,8
+50,3,0,0,0,0,1,1,1,1,16,16,17,17,16,16,17,17
+10,5,0,0,0,0,1,1,1,1,2,2,2,2,2,2,2,2
+23,5,0,0,0,0,1,1,1,1,4,4,5,5,4,4,5,5
+50,5,0,0,0,0,1,1,1,1,10,10,10,10,10,10,10,10
+10,10,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1
+23,10,0,0,0,0,1,1,1,1,2,2,3,3,2,2,3,3
+50,10,0,0,0,0,1,1,1,1,5,5,5,5,5,5,5,5

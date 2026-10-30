@@ -1,0 +1,23 @@
+part b: 1000 of 1000 replicates usable, 12.0 min
+
+== new-group coverage of nominal 90% ==
+  G model_ml.mean model_ml.se model_reml.mean model_reml.se conf_one.mean
+  6         0.839     0.01297           0.861       0.01246         1.000
+  8         0.891     0.01040           0.904       0.01002         1.000
+ 10         0.859     0.01176           0.876       0.01103         0.924
+ 15         0.907     0.00917           0.916       0.00889         0.960
+ 20         0.878     0.01020           0.882       0.01004         0.886
+ conf_one.se conf_all.mean conf_all.se
+      0.0000         0.892     0.01227
+      0.0000         0.928     0.00874
+      0.0101         0.898     0.01107
+      0.0068         0.930     0.00824
+      0.0119         0.889     0.01029
+
+== conformal: share unbounded and mean level chosen ==
+  G unbounded_one unbounded_all level_one level_all
+  6             1             0     1.000     0.944
+  8             1             0     1.000     0.940
+ 10             0             0     0.941     0.931
+ 15             0             0     0.952     0.917
+ 20             0             0     0.914     0.911

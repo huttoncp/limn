@@ -1,0 +1,7 @@
+"check","value","rule","pass"
+"1 agreement with the bisection, every row (max rel diff)","9.9e-13","<= 2e-12","yes"
+"1 rows that disagree","0","0","yes"
+"2 passes at most the bisection's + 2, every call (worst excess)","3","<= 2","NO"
+"3 bracket property, every non-flat row (failures)",NA,"0","NO"
+"3 flat-at-p rows (reported apart)","1293","reported",""
+"4 downstream results unchanged (all rows of the table below)","6 of 7","all","NO"

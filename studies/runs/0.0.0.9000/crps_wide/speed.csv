@@ -1,0 +1,4 @@
+"series","mean_scripts","rows","median_width","seconds_old","seconds_new","max_abs_diff","within","max_flagged"
+"Concessional|Co-payments|A|A12",16579.9166666667,12,29105.5,274.42,10.2,0.000334917214559027,TRUE,0
+"Concessional|Co-payments|H|H01",2348.66666666667,12,3319.5,36.6099999999999,5.37,3.94557898175663e-06,TRUE,0
+"Concessional|Safety net|G|G03",29645.8333333333,12,158495,254.18,77.52,0.00710066973260837,TRUE,0

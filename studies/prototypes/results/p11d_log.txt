@@ -1,0 +1,32 @@
+part d: 400 of 400 replicates usable, 18.4 min
+
+== forecast coverage of nominal 90%, by horizon ==
+     fam h model.mean model.se conf_h.mean conf_h.se conf_pooled.mean
+  nbinom 1      0.876  0.00319       0.907   0.00306            0.905
+ poisson 1      0.904  0.00309       0.904   0.00328            0.903
+  nbinom 2      0.874  0.00323       0.901   0.00313            0.903
+ poisson 2      0.901  0.00333       0.904   0.00367            0.902
+  nbinom 3      0.870  0.00335       0.899   0.00348            0.900
+ poisson 3      0.903  0.00336       0.906   0.00392            0.903
+  nbinom 4      0.876  0.00324       0.902   0.00338            0.902
+ poisson 4      0.901  0.00325       0.902   0.00383            0.900
+ conf_pooled.se
+        0.00307
+        0.00329
+        0.00313
+        0.00361
+        0.00324
+        0.00371
+        0.00318
+        0.00343
+
+== mean level chosen ==
+     fam h level_h level_pooled
+  nbinom 1   0.925        0.923
+ poisson 1   0.899        0.901
+  nbinom 2   0.922        0.923
+ poisson 2   0.903        0.901
+  nbinom 3   0.923        0.923
+ poisson 3   0.903        0.901
+  nbinom 4   0.924        0.923
+ poisson 4   0.902        0.901

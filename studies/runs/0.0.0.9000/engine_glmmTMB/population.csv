@@ -1,0 +1,3 @@
+"family","exact","max_rel_diff"
+"poisson","exp(eta + s^2/2)",5.44421099820093e-16
+"binomial","integrate()",1.17317523780073e-15

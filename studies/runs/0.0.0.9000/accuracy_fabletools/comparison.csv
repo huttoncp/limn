@@ -1,0 +1,13 @@
+"measure","max_rel_diff"
+"MASE12",0
+"RMSSE12",0
+"MASE1",0
+"RMSSE1",0
+"MAE",0
+"RMSE",0
+"winkler80",0
+"quantile score / pinball",0
+"RMSE (mixture)",7.7715611723761e-16
+"RMSSE12 (mixture)",6.66133814775094e-16
+"winkler80 (mixture)",1.4876081535933e-06
+"quantile score / pinball (mixture)",1.43643776462365e-06

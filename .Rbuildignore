@@ -1,0 +1,14 @@
+^studies$
+^\.gitignore$
+^\.git$
+^\.Rproj\.user$
+^.*\.Rproj$
+^.*\.Rcheck$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
+^\.github$
+^dev$
+^\.claude$
+^LICENSE\.md$
+^CONTRIBUTING\.md$

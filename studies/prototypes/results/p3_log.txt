@@ -1,0 +1,52 @@
+iid: 1200 of 1200 replicates usable (20.9 min); ar: 120 of 120 (6.7 min)
+share of iid fits with a held (flat) direction: 0.011 
+
+== new observations: coverage of central 90% and 50% intervals ==
+      fam  G target method c90.mean  c90.se c50.mean  c50.se
+ gaussian  8    new     M0    0.845 0.01001    0.451 0.01311
+  poisson  8    new     M0    0.852 0.00972    0.468 0.01334
+ gaussian 40    new     M0    0.905 0.00764    0.508 0.01299
+  poisson 40    new     M0    0.904 0.00776    0.482 0.01221
+ gaussian  8   seen     M0    0.850 0.00753    0.460 0.01045
+  poisson  8   seen     M0    0.866 0.00703    0.442 0.00947
+ gaussian 40   seen     M0    0.870 0.00316    0.468 0.00477
+  poisson 40   seen     M0    0.873 0.00281    0.472 0.00457
+ gaussian  8    new     M1    0.845 0.01001    0.451 0.01311
+  poisson  8    new     M1    0.851 0.00989    0.482 0.01389
+ gaussian 40    new     M1    0.905 0.00764    0.508 0.01299
+  poisson 40    new     M1    0.885 0.00874    0.481 0.01250
+ gaussian  8   seen     M1    0.870 0.00722    0.477 0.01041
+  poisson  8   seen     M1    0.892 0.00628    0.473 0.01068
+ gaussian 40   seen     M1    0.895 0.00294    0.491 0.00479
+  poisson 40   seen     M1    0.899 0.00247    0.503 0.00454
+ gaussian  8    new     M2    0.861 0.00963    0.469 0.01332
+  poisson  8    new     M2    0.872 0.00918    0.483 0.01357
+ gaussian 40    new     M2    0.907 0.00757    0.514 0.01304
+  poisson 40    new     M2    0.893 0.00830    0.483 0.01229
+ gaussian  8   seen     M2    0.875 0.00707    0.482 0.01033
+  poisson  8   seen     M2    0.894 0.00637    0.481 0.01026
+ gaussian 40   seen     M2    0.895 0.00291    0.491 0.00477
+  poisson 40   seen     M2    0.898 0.00264    0.502 0.00438
+ gaussian  8    new     M3    0.879 0.00920    0.485 0.01341
+  poisson  8    new     M3    0.877 0.00908    0.500 0.01383
+ gaussian 40    new     M3    0.909 0.00757    0.515 0.01307
+  poisson 40    new     M3    0.887 0.00849    0.496 0.01251
+ gaussian  8   seen     M3    0.880 0.00696    0.487 0.01045
+  poisson  8   seen     M3    0.900 0.00602    0.472 0.01070
+ gaussian 40   seen     M3    0.895 0.00288    0.491 0.00482
+  poisson 40   seen     M3    0.900 0.00264    0.505 0.00444
+
+== Poisson AR(1) forecasts, 20 groups x 16 times ==
+ h method c90.mean  c90.se c50.mean  c50.se
+ 1     M0    0.875 0.00675    0.477 0.00969
+ 2     M0    0.890 0.00689    0.505 0.01108
+ 3     M0    0.884 0.00698    0.497 0.00991
+ 4     M0    0.884 0.00672    0.484 0.00965
+ 1     M1    0.905 0.00613    0.496 0.01019
+ 2     M1    0.892 0.00693    0.503 0.01045
+ 3     M1    0.892 0.00646    0.499 0.01028
+ 4     M1    0.887 0.00694    0.493 0.01052
+ 1     M3    0.909 0.00561    0.500 0.01055
+ 2     M3    0.903 0.00631    0.505 0.01002
+ 3     M3    0.899 0.00605    0.500 0.01100
+ 4     M3    0.894 0.00628    0.492 0.01077

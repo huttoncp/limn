@@ -1,0 +1,212 @@
+---
+title: "Predictions: which unit, and how uncertain"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Predictions: which unit, and how uncertain}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+A mixed model can answer several different questions about the same row of
+data. How many visits will a 50-year-old make at clinic C01? At a clinic not
+in the data? At a typical clinic? On average across clinics? `ilm_predict()`
+makes you name the question, because the answers differ. This vignette works
+through the choices: which unit, whether the mean or a new observation, and
+how much of the fit's uncertainty to carry, and then the check limn makes when
+there are few groups, with its remedy.
+
+```{r setup}
+library(limn)
+```
+
+## The data and the model
+
+Patients' yearly visits to a clinic depend on their age, and clinics differ.
+The simulation below makes data for any number of clinics, 25 patients each,
+with the clinics' effects drawn from a normal distribution on the log scale.
+
+```{r data}
+simulate_clinics <- function(n_clinics, seed) {
+  set.seed(seed)
+  d <- data.frame(clinic = factor(rep(sprintf("C%02d", 1:n_clinics), each = 25)))
+  d$age <- round(runif(nrow(d), 20, 80))
+  clinic_effect <- rnorm(n_clinics, 0, 0.5)
+  d$visits <- rpois(nrow(d), exp(0.3 + 0.02 * (d$age - 50) + clinic_effect[d$clinic]))
+  d
+}
+clinics30 <- simulate_clinics(30, seed = 2026)
+fit <- illume::ilm_model(visits ~ I(age - 50) + (1 | clinic), data = clinics30,
+                         family = "poisson", verbose = FALSE)
+```
+
+## Which unit
+
+The same row, a 50-year-old at clinic C01, predicted four ways:
+
+```{r groups}
+row <- data.frame(clinic = "C01", age = 50)
+which_unit <- lapply(c("fitted", "new", "typical", "population"), function(g)
+  cbind(groups = g, as.data.frame(ilm_predict(fit, row, groups = g, nsim = 1000))))
+do.call(rbind, which_unit)
+```
+
+These are predictions of the mean number of visits, and each answers a
+different question:
+
+* `"fitted"`: clinic C01 itself, with its own estimated effect.
+* `"new"`: a clinic not in the data. Its effect is unknown, so it is drawn from
+  the fitted distribution of clinics, and the interval is much the widest. Its
+  `estimate` is the predictive median, and `mean` the expected value.
+* `"typical"`: a clinic whose effect is zero.
+* `"population"`: the mean averaged over clinics.
+
+The typical clinic and the population average differ. With a log link, the
+mean at the middle clinic is not the average of the clinics' means: here the
+average is higher. It agrees, up to simulation error, with the new clinic's
+expected value, since a new clinic is a clinic drawn at random. Which of the four to report depends on the
+question, so a model with random effects has no default `groups`.
+
+## The mean, or a new observation
+
+`target = "mean"` predicts the expected number of visits. `target = "response"`
+predicts one patient's count, which adds the Poisson variation around that
+mean:
+
+```{r target}
+new_clinic <- data.frame(clinic = "new", age = 50)
+rbind(cbind(target = "mean",
+            as.data.frame(ilm_predict(fit, new_clinic, target = "mean", groups = "new", nsim = 1000))),
+      cbind(target = "response",
+            as.data.frame(ilm_predict(fit, new_clinic, target = "response", groups = "new", nsim = 1000))))
+```
+
+The mean is the same either way; the interval for one patient is wider, and
+in whole visits.
+
+## Averages over a population
+
+A model's predictions can be averaged over a population of rows, draw by draw,
+so the average keeps the uncertainty its rows share. `ilm_average()` does this.
+Averaged over this sample's own patients, each at their own clinic, the model
+gives:
+
+```{r standardise}
+p_all <- ilm_predict(fit, clinics30, groups = "fitted", nsim = 500)
+as.data.frame(ilm_average(p_all))
+```
+
+With population counts as weights, the same average is post-stratification.
+Gelman and Hill (2007, section 14.1, equation (14.1)) weight each cell's
+prediction by its count in the population. Here the cells are three ages,
+averaged over clinics, in a population with more young patients than the
+sample:
+
+```{r poststratify}
+cells <- data.frame(age = c(30, 50, 70), count = c(500, 300, 200))
+p_cells <- ilm_predict(fit, cells, groups = "population", nsim = 500)
+as.data.frame(p_cells)
+as.data.frame(ilm_average(p_cells, weights = "count"))
+```
+
+Half the weight is on the youngest cell, so the average sits below the
+middle cell's prediction.
+
+## How uncertain
+
+A prediction carries the fit's uncertainty by drawing the parameters. The
+`uncertainty` argument says how much is drawn:
+
+* `"joint"` (the default): every parameter, the variances included;
+* `"fixed"`: the variances held at their estimates, everything else drawn;
+* `"latent"`: every parameter held, and only the random effects drawn;
+* `"none"`: the plug-in prediction at the estimates.
+
+With 30 clinics the four choices give nearly the same interval for a new
+clinic (not shown). With few clinics they don't, so the rest of this vignette uses 8. The model is fitted by maximum likelihood
+(`reml = FALSE`), to be compared with restricted maximum likelihood below.
+
+```{r few}
+clinics8 <- simulate_clinics(8, seed = 2026)
+fit8 <- illume::ilm_model(visits ~ I(age - 50) + (1 | clinic), data = clinics8,
+                          family = "poisson", reml = FALSE, verbose = FALSE)
+```
+
+The 90% interval for a new clinic's mean, under each choice:
+
+```{r uncertainty}
+widths <- sapply(c("joint", "fixed", "latent", "none"), function(u) {
+  p <- suppressWarnings(ilm_predict(fit8, new_clinic, groups = "new", uncertainty = u, nsim = 2000))
+  a <- as.data.frame(p)
+  c(lower = a$lower_0.9, upper = a$upper_0.9, width = a$upper_0.9 - a$lower_0.9)
+})
+round(widths, 2)
+```
+
+Here the more that is drawn, the wider the interval. For a new clinic,
+`"latent"` and `"none"` agree: both hold the parameters, and the new clinic's
+effect is drawn either way. In limn's prototype study of few groups
+(`studies/prototypes/`), `"joint"` came closest to nominal coverage for a new
+unit's observation, though still below it: 0.88 for 90% intervals with 8
+groups, against 0.85 to 0.87 for the other methods it tried, each with a
+simulation standard error of about 0.01. (`suppressWarnings()`
+hides a warning here, the few-groups check for means; the next section turns
+to the few-groups checks.)
+
+## The few-groups check, and its remedy
+
+With so few clinics, the variance between them is poorly determined, and
+intervals for a new clinic cover less often than they say. `ilm_predict()`
+warns, says why, and names the remedy:
+
+```{r warn-ml}
+p8 <- ilm_predict(fit8, new_clinic, target = "response", groups = "new", nsim = 1000)
+```
+
+Maas and Hox (2005, pp. 86 and 89-90) found the standard errors of the
+variances between groups too small with 50 groups or fewer, in linear
+multilevel models. The remedy the warning names is to refit by restricted
+maximum likelihood:
+
+```{r warn-reml}
+fit8_reml <- illume::ilm_model(visits ~ I(age - 50) + (1 | clinic), data = clinics8,
+                               family = "poisson", reml = TRUE, verbose = FALSE)
+p8_reml <- ilm_predict(fit8_reml, new_clinic, target = "response", groups = "new", nsim = 1000)
+```
+
+The check still warns, since 8 clinics are still few, but it no longer offers
+the refit: the fit already used it. It says what limn's study found with it,
+and that more groups is the sure cure.
+
+For a mean rather than a new observation, a related check warns that the
+intervals are somewhat too narrow, and that no remedy for them has been
+measured yet; see the Checks section of `?ilm_predict`. With the 30 clinics
+above, neither check warns.
+
+## Reading a prediction
+
+`as.data.frame()` gives each row's estimate, mean and 90% interval;
+`summary()` gives the 50% and 90% intervals. Their `new_level` column is
+`TRUE` only for a row naming a clinic the fit has not seen, predicted under
+`groups = "fitted"` as a new one.
+
+```{r summary}
+summary(ilm_predict(fit, new_clinic, groups = "new", nsim = 1000))
+```
+
+## Where next
+
+* `?ilm_predict` for every choice, the prediction object, and the checks.
+* `?ilm_average` for standardisation and post-stratification.
+* `vignette("limn")` for forecasting, scoring and comparing models.
+
+## References
+
+Gelman, A. and Hill, J. (2007). *Data Analysis Using Regression and
+Multilevel/Hierarchical Models*. Cambridge University Press. Section 14.1.
+
+Maas, C. J. M. and Hox, J. J. (2005). Sufficient sample sizes for multilevel
+modeling. *Methodology* 1(3), 86-92. Pp. 86 and 89-90.

@@ -1,0 +1,33 @@
+# R build artefacts
+*.Rcheck/
+*.tar.gz
+*.Rproj.user/
+.Rhistory
+.RData
+.Rapp.history
+inst/doc/
+# vignettes knitted in place
+vignettes/*.html
+vignettes/*.R
+
+# Raw per-replicate simulation output from the prototypes. Regenerable: the
+# scripts use fixed seeds, and .rds does not delta-compress. The logs beside
+# them hold the summary tables, and the small summary .rds files are tracked.
+studies/prototypes/results/p3_interval_coverage.rds
+studies/prototypes/results/p10_few_groups_reml.rds
+studies/prototypes/results/p11?_conformal.rds
+
+# Raw per-replicate output of the validation studies, as in illume: regenerable
+# from the scripts' fixed seeds. The per-cell summary .csv files and the
+# generated findings are tracked.
+studies/runs/**/*.rds
+
+# stray device output from tests or examples
+Rplots.pdf
+**/Rplots.pdf
+
+# pkgdown output
+docs/
+
+# helper worktrees made by the development tooling
+.claude/

@@ -1,0 +1,8 @@
+"structure","rows","against","n","mean_diff_in_mc_se","sd_ratio_min","sd_ratio_max","mean_diff_in_sd"
+"ar1","forecast","exact MVN at the estimates (fixed)",32,2.313863363328,0.994199208401553,1.0057149297743,0.01156931681664
+"ar1","forecast","glmmTMB, variances mapped, against the exact reference",32,NA,1,1,1.66744914141973e-15
+"car1","forecast","exact MVN at the estimates (fixed)",32,2.56151819951152,0.994074067444473,1.00704941110088,0.0128075909975576
+"car1","between","exact MVN at the estimates (fixed)",16,1.90154723282254,0.991897747256234,1.01354147624182,0.00950773616411271
+"car1","forecast and between","glmmTMB, variances mapped, against the exact reference",48,NA,1,1,3.90768867042128e-10
+"rw1","forecast","exact MVN at the estimates (fixed)",32,1.93989296000038,0.992249483023046,1.00460353940717,0.0096994648000019
+"rw1","between","exact MVN at the estimates (fixed)",16,1.80320640311972,0.994852590358625,1.00824277602885,0.00901603201559858

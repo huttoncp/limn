@@ -1,0 +1,4 @@
+"family","fitted_max_rel_diff","fitted_newton_max_rel_diff","typical_max_rel_diff"
+"gaussian",1.95535708054048e-16,1.11022302462516e-16,0
+"poisson",5.04363167203437e-12,5.04363167203437e-12,0
+"binomial",6.06459327201492e-13,1.71029856943505e-13,0

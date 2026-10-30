@@ -1,0 +1,26 @@
+2000 of 2000 replicates usable (both arms), 3.8 min
+
+== coverage of central 90% and 50% intervals, 8 groups of 6, joint draws (M3) ==
+      fam  arm target c90.mean  c90.se c50.mean  c50.se
+ gaussian   ML    new    0.891 0.00462    0.497 0.00709
+  poisson   ML    new    0.872 0.00510    0.479 0.00741
+ gaussian REML    new    0.903 0.00431    0.510 0.00702
+  poisson REML    new    0.892 0.00469    0.500 0.00747
+ gaussian   ML   seen    0.885 0.00375    0.482 0.00566
+  poisson   ML   seen    0.894 0.00342    0.491 0.00554
+ gaussian REML   seen    0.891 0.00365    0.487 0.00563
+  poisson REML   seen    0.894 0.00342    0.492 0.00552
+
+== paired REML - ML difference in 90% coverage ==
+      fam target diff.mean  diff.se
+ gaussian    new   0.01200 0.001965
+  poisson    new   0.01980 0.001993
+ gaussian   seen   0.00588 0.000959
+  poisson   seen   0.00050 0.000685
+
+== estimated group SD (truth 0.8) ==
+      fam  arm sb_hat.mean sb_hat.median
+ gaussian   ML       0.673         0.675
+  poisson   ML       0.720         0.716
+ gaussian REML       0.739         0.739
+  poisson REML       0.784         0.777

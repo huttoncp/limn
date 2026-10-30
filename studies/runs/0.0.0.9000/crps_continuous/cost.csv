@@ -1,0 +1,9 @@
+"arm","runs","seconds","ratio_to_today"
+"gaussian today",1,212.74,1
+"gaussian exact",1,266.440000000001,1.25242079533703
+"gaussian hybrid",1,254.190000000001,1.19483877032998
+"forecast today",3,53.8600000000006,1
+"forecast exact",3,97.0599999999995,1.80207946528033
+"forecast hybrid",3,90.369999999999,1.6778685480876
+"weibull today",1,252.5,1
+"weibull axis",1,382.75,1.51584158415842
