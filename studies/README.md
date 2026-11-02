@@ -24,6 +24,14 @@ they are installed.
 - Not committed: raw per-replicate `.rds`, which the scripts' fixed seeds
   reproduce exactly. It stays on local disk, as in `illume`.
 
+**Commit IDs in these files.** Some findings, designs and scripts here cite
+`limn` commits by their IDs: the commit a study was run at, as in the version
+line at the top of a findings file, and commits for fixes, changes, earlier
+runs and code kept for reference. Every `limn` commit ID in these files
+refers to `limn`'s development history before its first public commit. That
+history is not published, so those IDs cannot be looked up in this
+repository. They are kept as they were recorded.
+
 Results that go against `limn` are reported as plainly as those that do not.
 
 **Where the outside packages come from.** Most comparators live in the
