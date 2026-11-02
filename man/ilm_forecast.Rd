@@ -10,6 +10,8 @@ ilm_forecast(
   newdata,
   target = c("response", "mean", "link"),
   groups = "fitted",
+  time = NULL,
+  group = NULL,
   ...
 )
 }
@@ -28,8 +30,12 @@ observation; or \code{"link"}, the linear predictor.}
 enter}. Required when the model has random-effect or correlation-over-time
 terms.}
 
-\item{...}{Other arguments to \code{\link[=ilm_predict]{ilm_predict()}}: \code{uncertainty}, \code{set}, \code{nsim},
-\code{seed}, \code{time} and \code{group}.}
+\item{time, group}{The names of the columns of \code{newdata} holding time and the
+series, such as \verb{time = "week", group = "region"}; see \emph{Time and series
+columns}. Needed only where neither the model nor the rows say.}
+
+\item{...}{Other arguments to \code{\link[=ilm_predict]{ilm_predict()}}: \code{uncertainty}, \code{set}, \code{nsim}
+and \code{seed}.}
 }
 \value{
 A predictive distribution, as from \code{\link[=ilm_predict]{ilm_predict()}}; \emph{The prediction
