@@ -95,6 +95,11 @@ test_that("rows named by time and group are checked for a trend wherever they co
   ## rows within each series' data are not forecasts
   expect_no_warning(ilm_forecast(fit, data.frame(id = c("a", "b"), t = c(3, 12)),
                                  uncertainty = "latent", nsim = 20, time = "t", group = "id"))
+  ## time inside a function: the fit's own times still say the rows are ahead
+  fit_poly <- suppressMessages(suppressWarnings(illume::ilm_model(
+    y ~ poly(t, 2) + (1 | id), data = d, family = "gaussian", verbose = FALSE)))
+  expect_warning(ilm_forecast(fit_poly, ahead, uncertainty = "latent", nsim = 20, time = "t", group = "id"),
+                 "trends in `t` [(]poly[(]t, 2[)][)]")
 })
 
 test_that("with every parameter held, a gaussian AR(1) forecast is the Kalman filter's", {

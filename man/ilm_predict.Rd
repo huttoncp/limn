@@ -136,7 +136,9 @@ A model with time only in its formula, such as a trend or a random slope in
 time, has no correlation over time to say. Rows from \code{\link[=ilm_future]{ilm_future()}} say for
 it; rows made otherwise, or changed by \code{merge()} or \code{subset()}, which drop
 what \code{ilm_future()} recorded, need \code{time} and \code{group}. A correlation over
-time built from vectors has no columns of its own, so it always needs them.
+time built from vectors has no columns of its own: it takes the ones \code{time}
+and \code{group} name, or else the ones \code{\link[=ilm_future]{ilm_future()}} recorded, and with
+neither, the prediction stops.
 }
 
 \section{Covariates given as draws}{

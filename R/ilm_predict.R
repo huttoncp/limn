@@ -66,7 +66,9 @@
 #' time, has no correlation over time to say. Rows from [ilm_future()] say for
 #' it; rows made otherwise, or changed by `merge()` or `subset()`, which drop
 #' what `ilm_future()` recorded, need `time` and `group`. A correlation over
-#' time built from vectors has no columns of its own, so it always needs them.
+#' time built from vectors has no columns of its own: it takes the ones `time`
+#' and `group` name, or else the ones [ilm_future()] recorded, and with
+#' neither, the prediction stops.
 #'
 #' @section Covariates given as draws:
 #' A covariate that is not known in advance, such as next month's
@@ -261,7 +263,7 @@ ilm_predict <- function(fit, newdata, target = c("mean", "response", "link"), gr
                seed = lmn_seed_record(seed, "draws"))
   if (!is.null(cb)) { meta$covariate_draws <- cb$C; meta$drawn <- cb$drawn }
   checks <- lmn_bind_checks(ck)
-  fcm <- lmn_forecast_meta(fit, m, nd, cb)
+  fcm <- lmn_forecast_meta(fit, m, nd, cb, cols)
   meta$time <- fcm$time %||% cols$time; meta$series <- fcm$series %||% cols$group
   ## the response column, so a score's scale can be read from the history
   meta$response <- all.vars(stats::formula(fit)[[2]])[1]
@@ -301,7 +303,7 @@ ilm_predict <- function(fit, newdata, target = c("mean", "response", "link"), gr
 ## time have no origin (NA).
 #' @keywords internal
 #' @noRd
-lmn_forecast_meta <- function(fit, m, nd, cb = NULL) {
+lmn_forecast_meta <- function(fit, m, nd, cb = NULL, cols = NULL) {
   ar <- m$ar
   n <- if (is.null(cb)) nrow(nd) else nrow(cb$rows)
   none <- list(time = NULL, series = NULL, origin = rep(NA_real_, n))
@@ -311,8 +313,17 @@ lmn_forecast_meta <- function(fit, m, nd, cb = NULL) {
     length(v) == nrow(ar) && !anyNA(v) && isTRUE(all(v == as.numeric(ar$time)))
   }
   same_chr <- function(z) length(z) == nrow(ar) && isTRUE(all(as.character(z) == as.character(ar$group)))
-  tcol <- names(nd)[vapply(nd, same_num, TRUE)][1]
-  gcol <- if (all(is.na(ar$group))) NA else names(nd)[vapply(nd, same_chr, TRUE)][1]
+  ## the term's own columns when it was built by name, else the ones named or
+  ## recorded; only failing those, the first columns holding the cells' values
+  own <- attr(illume::ilm_cells(fit), "vars")
+  known <- function(a) {
+    v <- if (!is.null(own)) unname(own[[a]]) else cols[[a]]
+    if (!is.null(v) && v %in% names(nd)) v else NA
+  }
+  tcol <- known("time")
+  if (is.na(tcol)) tcol <- names(nd)[vapply(nd, same_num, TRUE)][1]
+  gcol <- if (all(is.na(ar$group))) NA else known("group")
+  if (is.na(gcol) && !all(is.na(ar$group))) gcol <- names(nd)[vapply(nd, same_chr, TRUE)][1]
   mf <- stats::model.frame(fit)
   if (!is.na(tcol) && tcol %in% names(mf) && (is.na(gcol) || gcol %in% names(mf))) {
     key <- function(g) if (is.na(gcol)) rep("", length(g)) else as.character(g)
@@ -684,12 +695,18 @@ lmn_warn_trend <- function(fit, cols, nd, m, vc) {
 
 ## Are the new rows past the data? Rows from ilm_future() say so by their
 ## horizon; others by their time against the last time the fit saw in their
-## series (any series, for one the fit has not seen).
+## series (any series, for one the fit has not seen). The fit's times are in
+## its model frame, or, when time enters only inside a function such as
+## poly(t, 2), in the variables illume keeps beside it (`data_extra`, an
+## element of the fit rather than an exported accessor).
 #' @keywords internal
 #' @noRd
 lmn_rows_ahead <- function(fit, nd, tv, gv) {
   if (!is.null(nd$horizon)) return(any(nd$horizon > 0, na.rm = TRUE))
   mf <- stats::model.frame(fit)
+  if (!tv %in% names(mf) && is.data.frame(fit$data_extra) && tv %in% names(fit$data_extra) &&
+      nrow(fit$data_extra) == nrow(mf))
+    mf[[tv]] <- fit$data_extra[[tv]]
   if (!tv %in% names(mf) || !tv %in% names(nd)) return(FALSE)
   t_fit <- as.numeric(mf[[tv]])
   last <- rep(max(t_fit, na.rm = TRUE), nrow(nd))

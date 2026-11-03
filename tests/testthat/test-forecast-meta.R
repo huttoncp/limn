@@ -100,6 +100,9 @@ test_that("a correlation over time built by name keeps its own columns", {
   ## the same names pass, and change nothing
   expect_equal(ilm_forecast(f$by_name, f$nd, target = "link", nsim = 20, seed = 1, time = "t", group = "g"),
                ilm_forecast(f$by_name, f$nd, target = "link", nsim = 20, seed = 1))
+  ## a copy of a column, placed first, is not taken for the term's own
+  p <- ilm_forecast(f$by_name, data.frame(t_copy = f$nd$t, g_copy = f$nd$g, f$nd), nsim = 20)
+  expect_identical(c(p$meta$time, p$meta$series), c("t", "g"))
 })
 
 test_that("rows from ilm_future() built around another time column say so", {
@@ -116,6 +119,22 @@ test_that("rows from ilm_future() built around another time column say so", {
   fut$t <- fut$week - 100
   expect_equal(ilm_forecast(f$by_name, fut, target = "link", nsim = 20, seed = 1)$estimate,
                ilm_forecast(f$by_name, fut[c("t", "g")], target = "link", nsim = 20, seed = 1)$estimate)
+  ## the same for the series: grouped by another column, within which the
+  ## model's series changes, ilm_future() leaves the model's series missing
+  b <- data.frame(t = rep(1:12, 2), g2 = rep(c("s1", "s2"), each = 12),
+                  g = c(ifelse(1:12 <= 6, "a", "b"), rep("c", 12)), y = 10)
+  fut_g <- suppressMessages(ilm_future(b, time = "t", group = "g2", h = 2, response = "y"))
+  expect_true(anyNA(fut_g$g))
+  expect_error(ilm_forecast(f$by_name, fut_g, nsim = 20),
+               "record 'g2' as their series column.*uses 'g'.*group = \"g\", or fill in 'g'")
+})
+
+test_that("rows from ilm_future() give a correlation built from vectors its columns", {
+  f <- ar_pair()
+  a <- expand.grid(t = 1:12, g = factor(c("a", "b", "c"))); a$y <- 10
+  fut <- ilm_future(a, time = "t", group = "g", h = 2, response = "y")
+  expect_equal(ilm_forecast(f$from_vectors, fut, target = "link", nsim = 50, seed = 1)$estimate,
+               ilm_forecast(f$by_name, fut, target = "link", nsim = 50, seed = 1)$estimate)
 })
 
 test_that("a correlation over time built from vectors takes its time and series as columns", {
