@@ -315,8 +315,9 @@ lmn_se_dm <- function(d, origin, lag) {
 ## differences `dt` (Coroneo and Iacone 2020), for few origins. Each returns
 ## the statistic sqrt(T) mean / sigma-hat and its reference distribution.
 ##   WCE: the Bartlett-weighted autocovariances to bandwidth M = floor(T^(1/2)),
-##        with Kiefer and Vogelsang's (2005) fixed-b critical values, which
-##        come as polynomials in b = M / T for set levels only.
+##        with Kiefer and Vogelsang's (2005) fixed-b critical values, through
+##        the cubic in b = M / T that Coroneo and Iacone (2020, p. 5) give for
+##        the 0.950 and 0.975 quantiles, so set levels only.
 ##   WPE: the Daniell-weighted periodogram at the first m = floor(T^(1/3))
 ##        Fourier frequencies, with the t distribution on 2m degrees of
 ##        freedom (Hualde and Iacone 2017), so any p-value.
