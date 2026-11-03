@@ -1,0 +1,75 @@
+url: https://huttoncp.github.io/limn/
+template:
+  bootstrap: 5
+  bslib:
+    primary: "#2a6f97"
+
+home:
+  title: A Projection Engine for Distributional Forecasting
+
+navbar:
+  structure:
+    left:  [intro, reference, articles, news, illume, illumex]
+    right: [search, github]
+  components:
+    illume:
+      text: Modelling (illume)
+      href: https://huttoncp.github.io/illume/
+    illumex:
+      text: Exploration (illumex)
+      href: https://huttoncp.github.io/illumex/
+
+articles:
+- title: Articles
+  navbar: ~
+  contents:
+  - predictions
+  - forecasting
+
+reference:
+- title: "Predictions and forecasts"
+  desc: >
+    Predictive distributions from a fitted illume model, the rows a forecast needs, and covariates whose future is not known.
+  contents:
+  - ilm_predict
+  - ilm_forecast
+  - ilm_future
+  - ilm_covariate_paths
+  - ilm_as_draws
+  - as.data.frame.ilm_pred
+- title: "Totals and averages"
+  desc: >
+    Sums and weighted averages of predictions over rows, taken draw by draw.
+  contents:
+  - ilm_aggregate
+  - ilm_average
+- title: "Scores and calibration"
+  desc: >
+    How well predictive distributions match the outcomes: proper scores, scaled errors, probability integral transforms and calibration.
+  contents:
+  - ilm_scores.ilm_pred
+  - ilm_naive_scale
+  - ilm_pit
+  - ilm_calibration.ilm_pred
+- title: "Cross-validation and comparison"
+  desc: >
+    Folds that follow the data's structure, cross-validated scores, and model comparisons with standard errors.
+  contents:
+  - ilm_folds
+  - ilm_cv
+  - ilm_compare
+- title: "Plots"
+  desc: >
+    Fan charts, scores by horizon, model comparisons, PIT histograms and calibration.
+  contents:
+  - ilm_plot_fan
+  - ilm_plot_horizon
+  - ilm_plot_compare
+  - ilm_plot_pit
+  - ilm_plot_calibration
+- title: "Extending limn"
+  desc: >
+    Methods a package defines so that limn can predict from, and refit, its own models.
+  contents:
+  - ilm_cv_refit
+  - ilm_predict_draws
