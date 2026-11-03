@@ -59,6 +59,49 @@ test_that("forecasting a trend in time warns, and names a random walk", {
                  "trends in `t` [(]poly[(]t, 2[)][)]")
 })
 
+test_that("a random slope in time is a trend; grouping by time is not", {
+  set.seed(7)
+  d <- expand.grid(t = 1:12, id = factor(letters[1:6]))
+  d$y <- 5 + rnorm(6, 0, 1)[d$id] + rnorm(6, 0.3, 0.1)[d$id] * d$t + rnorm(nrow(d), 0, 0.5)
+  fit <- function(f) suppressMessages(suppressWarnings(illume::ilm_model(
+    f, data = d, family = "gaussian", verbose = FALSE)))
+  fut <- ilm_future(d, time = "t", group = "id", h = 2, response = "y")
+  ## the slope alone, with no trend in the fixed part, is named
+  w <- expect_warning(ilm_forecast(fit(y ~ 1 + (1 + t | id)), fut, uncertainty = "latent", nsim = 20),
+                      class = "lmn_trend")
+  expect_match(conditionMessage(w), "trends in `t` [(][(]1 [+] t [|] id[)], a random slope[)]")
+  expect_match(conditionMessage(w), "each unit's slope does not change either [(]limn's own reasoning[)]")
+  ## a level for each time point is not a trend (with 12 time points other
+  ## checks warn, which are not the ones tested here)
+  seen <- character()
+  withCallingHandlers(
+    ilm_forecast(fit(y ~ 1 + (1 | id) + (1 | t)), fut, groups = list(id = "fitted", t = "new"),
+                 uncertainty = "latent", nsim = 20),
+    warning = function(w) { seen <<- c(seen, class(w)); invokeRestart("muffleWarning") })
+  expect_false("lmn_trend" %in% seen)
+})
+
+test_that("rows named by time and group are checked for a trend wherever they come from", {
+  set.seed(8)
+  d <- expand.grid(t = 1:12, id = factor(letters[1:6]))
+  d$y <- 5 + 0.3 * d$t + rnorm(6, 0, 1)[d$id] + rnorm(nrow(d), 0, 0.5)
+  fit <- suppressMessages(suppressWarnings(illume::ilm_model(
+    y ~ t + (1 | id), data = d, family = "gaussian", verbose = FALSE)))
+  ahead <- data.frame(id = c("a", "b"), t = c(13, 14))
+  ## unnamed, such rows say nothing about time
+  expect_no_warning(ilm_forecast(fit, ahead, uncertainty = "latent", nsim = 20))
+  expect_warning(ilm_forecast(fit, ahead, uncertainty = "latent", nsim = 20, time = "t", group = "id"),
+                 class = "lmn_trend")
+  ## rows within each series' data are not forecasts
+  expect_no_warning(ilm_forecast(fit, data.frame(id = c("a", "b"), t = c(3, 12)),
+                                 uncertainty = "latent", nsim = 20, time = "t", group = "id"))
+  ## time inside a function: the fit's own times still say the rows are ahead
+  fit_poly <- suppressMessages(suppressWarnings(illume::ilm_model(
+    y ~ poly(t, 2) + (1 | id), data = d, family = "gaussian", verbose = FALSE)))
+  expect_warning(ilm_forecast(fit_poly, ahead, uncertainty = "latent", nsim = 20, time = "t", group = "id"),
+                 "trends in `t` [(]poly[(]t, 2[)][)]")
+})
+
 test_that("with every parameter held, a gaussian AR(1) forecast is the Kalman filter's", {
   ## A well-identified case, so the fit is interior. The earlier 40-point case was
   ## weakly identified: its likelihood basins were under 0.15 log-likelihood units

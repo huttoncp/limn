@@ -41,6 +41,8 @@ lmn_txt <- list(
                         "linear models fitted by restricted maximum likelihood. In limn's coverage",
                         "study with 8 groups, intervals for a new unit's observation covered 0.87 to",
                         "0.90 at 90%."),
+  trend_slopes = paste(" A random slope in time gives each unit a trend of its own, and forecasts",
+                       "assume that each unit's slope does not change either (limn's own reasoning)."),
   remedies = paste("illume::ilm_remedies() lists the model changes the fit's own checks support,",
                    "and illume::ilm_apply_remedy() refits the model with the one you choose."))
 
@@ -184,15 +186,16 @@ lmn_diagnostics <- list(
     reference = NULL, doc = list(what = "what is wrong")),
   trend = list(
     check = "deterministic trend", status = "WARN",
-    detail = "The fixed part trends in `{time}` ({terms}).",
-    cause = paste("Forecasts past the data assume that the trend's slope does not change (the",
-                  "reference), so their intervals leave out any change in it",
-                  paste0(lmn_txt$ours, ".")),
+    detail = "The model trends in `{time}` ({terms}).",
+    cause = paste0(paste("Forecasts past the data assume that the trend's slope does not change (the",
+                         "reference), so their intervals leave out any change in it",
+                         lmn_txt$ours), ".{slopes}"),
     suggestion = paste("For longer horizons a stochastic trend is safer (the reference): a random walk,",
                        "ar = ilm_rw1(~ {time} | {group}), lets the level move, and the intervals",
                        "widen with the horizon{instead}."),
     reference = lmn_ref$fpp3,
-    doc = list(time = "time", terms = "its trend terms", group = "series", instead = "")),
+    doc = list(time = "time", terms = "its trend terms", slopes = lmn_txt$trend_slopes,
+               group = "series", instead = "")),
 
   ## ---- totals (ilm_aggregate()) ----
   missing_totals = list(

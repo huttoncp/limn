@@ -46,7 +46,7 @@ on. The prediction already knows its time, series and response columns
 forecast's lag: 1, or the season's length for the seasonal naive.
 \item \strong{\code{naive = ilm_naive_scale(train, time =, group =, response =)}}: the
 scale computed once and passed in. Use it when the prediction doesn't know
-its time column (it has no correlation over time), or when several
+its time column (see \emph{Time and series columns} in \code{\link[=ilm_predict]{ilm_predict()}}), or when several
 models' predictions must share one scale, so their scaled errors compare
 on the same footing.
 }

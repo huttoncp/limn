@@ -50,6 +50,26 @@
 #' expected value beside it, as `mean`; for counts it can be well above the
 #' estimate at long horizons (see [as.data.frame.ilm_pred()]).
 #'
+#' @section Time and series columns:
+#' A prediction records which of its columns hold time and the series, for the
+#' trend check (see *Checks*) and for scaled errors read from the history
+#' ([ilm_scores()]'s `history =`). It takes them from, in turn:
+#' * a correlation over time built by name, such as `ilm_ar1(~ week | region)`:
+#'   its own columns. Naming a different column in `time` or `group` is an
+#'   error, since the model can use only its own, and so are rows from
+#'   [ilm_future()] built around a different column that leave the model's own
+#'   missing;
+#' * `time` and `group`, which name columns of `newdata`;
+#' * the rows [ilm_future()] built, which record their columns.
+#'
+#' A model with time only in its formula, such as a trend or a random slope in
+#' time, has no correlation over time to say. Rows from [ilm_future()] say for
+#' it; rows made otherwise, or changed by `merge()` or `subset()`, which drop
+#' what `ilm_future()` recorded, need `time` and `group`. A correlation over
+#' time built from vectors has no columns of its own: it takes the ones `time`
+#' and `group` name, or else the ones [ilm_future()] recorded, and with
+#' neither, the prediction stops.
+#'
 #' @section Covariates given as draws:
 #' A covariate that is not known in advance, such as next month's
 #' temperature, can be given as draws from its own forecast. `newdata` then
@@ -116,8 +136,9 @@
 #' @param nsim Number of parameter draws.
 #' @param seed Seed for the draws. The caller's random-number state is
 #'   restored afterwards.
-#' @param time,group For a correlation over time built from vectors, the new
-#'   rows' times and groups, passed on to `illume::ilm_matrices()`.
+#' @param time,group The names of the columns of `newdata` holding time and the
+#'   series, such as `time = "week", group = "region"`; see *Time and series
+#'   columns*. Needed only where neither the model nor the rows say.
 #' @section The prediction object:
 #' Read a prediction through [as.data.frame()][as.data.frame.ilm_pred] or
 #' [summary()][summary.ilm_pred] where you can. Its elements are listed here so
@@ -136,8 +157,8 @@
 #'   `groups` (one `"term = choice"` per term), `uncertainty`, `draws` (the
 #'   number of parameter draws), `nsim`, `family`, `seed`, and `response`, the
 #'   name of the response column. With covariates given as draws it also has
-#'   `covariate_draws` and `drawn`. With a correlation over time it has `time`
-#'   and `series`, the columns holding them.
+#'   `covariate_draws` and `drawn`. Where its time and series columns are known
+#'   (see *Time and series columns*), it has `time` and `series`, their names.
 #' * `checks`: a data frame of the checks the prediction raised (see *Checks*),
 #'   one row each, with columns `id`, `check`, `status`, `detail`, `cause`,
 #'   `suggestion`, `reference` and `values`. It has no rows when nothing was
@@ -212,7 +233,8 @@ ilm_predict <- function(fit, newdata, target = c("mean", "response", "link"), gr
   has_ar <- !is.null(vc$latent)
   spec <- lmn_groups_spec(if (missing(groups)) NULL else groups, re_terms, has_ar)
 
-  m <- illume::ilm_matrices(fit, nd, time = time, group = group)
+  cols <- lmn_time_cols(newdata, nd, time, group)
+  m <- lmn_matrices(fit, nd, cols, vc)
   ## covariates given as draws: blocks of the same rows, one block
   ## per draw, paired with the parameter draws in turn
   cb <- lmn_covariate_blocks(nd, m)
@@ -231,7 +253,7 @@ ilm_predict <- function(fit, newdata, target = c("mean", "response", "link"), gr
   ## the checks the prediction raises are warned as before, and kept on it
   ck <- list(lmn_collect(lmn_warn_few_groups(spec, m, dr, target,
                                              reml = isTRUE(fit$reml)))$checks,
-             lmn_collect(lmn_warn_trend(fit, newdata, nd, m, vc))$checks)
+             lmn_collect(lmn_warn_trend(fit, cols, nd, m, vc))$checks)
   rows <- if (is.null(cb)) nd else cb$rows
   rows$new_level <- lpd$new_level
   if (any(rows$new_level)) ck <- c(ck, list(lmn_diag("unseen_levels", n = sum(rows$new_level))))
@@ -241,8 +263,8 @@ ilm_predict <- function(fit, newdata, target = c("mean", "response", "link"), gr
                seed = lmn_seed_record(seed, "draws"))
   if (!is.null(cb)) { meta$covariate_draws <- cb$C; meta$drawn <- cb$drawn }
   checks <- lmn_bind_checks(ck)
-  fcm <- lmn_forecast_meta(fit, m, nd, cb)
-  meta$time <- fcm$time; meta$series <- fcm$series
+  fcm <- lmn_forecast_meta(fit, m, nd, cb, cols)
+  meta$time <- fcm$time %||% cols$time; meta$series <- fcm$series %||% cols$group
   ## the response column, so a score's scale can be read from the history
   meta$response <- all.vars(stats::formula(fit)[[2]])[1]
 
@@ -281,7 +303,7 @@ ilm_predict <- function(fit, newdata, target = c("mean", "response", "link"), gr
 ## time have no origin (NA).
 #' @keywords internal
 #' @noRd
-lmn_forecast_meta <- function(fit, m, nd, cb = NULL) {
+lmn_forecast_meta <- function(fit, m, nd, cb = NULL, cols = NULL) {
   ar <- m$ar
   n <- if (is.null(cb)) nrow(nd) else nrow(cb$rows)
   none <- list(time = NULL, series = NULL, origin = rep(NA_real_, n))
@@ -291,8 +313,17 @@ lmn_forecast_meta <- function(fit, m, nd, cb = NULL) {
     length(v) == nrow(ar) && !anyNA(v) && isTRUE(all(v == as.numeric(ar$time)))
   }
   same_chr <- function(z) length(z) == nrow(ar) && isTRUE(all(as.character(z) == as.character(ar$group)))
-  tcol <- names(nd)[vapply(nd, same_num, TRUE)][1]
-  gcol <- if (all(is.na(ar$group))) NA else names(nd)[vapply(nd, same_chr, TRUE)][1]
+  ## the term's own columns when it was built by name, else the ones named or
+  ## recorded; only failing those, the first columns holding the cells' values
+  own <- attr(illume::ilm_cells(fit), "vars")
+  known <- function(a) {
+    v <- if (!is.null(own)) unname(own[[a]]) else cols[[a]]
+    if (!is.null(v) && v %in% names(nd)) v else NA
+  }
+  tcol <- known("time")
+  if (is.na(tcol)) tcol <- names(nd)[vapply(nd, same_num, TRUE)][1]
+  gcol <- if (all(is.na(ar$group))) NA else known("group")
+  if (is.na(gcol) && !all(is.na(ar$group))) gcol <- names(nd)[vapply(nd, same_chr, TRUE)][1]
   mf <- stats::model.frame(fit)
   if (!is.na(tcol) && tcol %in% names(mf) && (is.na(gcol) || gcol %in% names(mf))) {
     key <- function(g) if (is.na(gcol)) rep("", length(g)) else as.character(g)
@@ -305,6 +336,74 @@ lmn_forecast_meta <- function(fit, m, nd, cb = NULL) {
   }
   if (!is.null(cb)) origin <- origin[cb$idx[, 1]]
   list(time = if (is.na(tcol)) NULL else tcol, series = if (is.na(gcol)) NULL else gcol, origin = origin)
+}
+
+## Which columns of the new rows hold time and the series: the ones `time` and
+## `group` name, or else the ones ilm_future() recorded on its rows (for a
+## named list of scenarios, when every scenario's rows agree). NULL where
+## neither says. `named` records which came from the arguments.
+#' @keywords internal
+#' @noRd
+lmn_time_cols <- function(newdata, nd, time, group) {
+  args <- list(time = time, group = group)
+  eg <- c(time = "week", group = "region")
+  for (a in names(args)) {
+    v <- args[[a]]
+    if (is.null(v)) next
+    if (!is.character(v) || length(v) != 1L || is.na(v) || !nzchar(v))
+      stop("`", a, "` names the column of `newdata` that holds the ",
+           if (a == "time") "time" else "series", ", such as ", a, " = \"", eg[[a]],
+           "\", not the values themselves.", call. = FALSE)
+    if (!v %in% names(nd))
+      stop("`", a, "` names column '", v, "', which is not in `newdata`.", call. = FALSE)
+  }
+  recorded <- function(which) {
+    v <- if (is.data.frame(newdata)) attr(newdata, which) else {
+      a <- lapply(newdata, attr, which)
+      if (length(unique(a)) == 1L) a[[1]]
+    }
+    if (is.character(v) && length(v) == 1L && v %in% names(nd)) v
+  }
+  list(time = time %||% recorded("time"), group = group %||% recorded("group"),
+       named = c(time = !is.null(time), group = !is.null(group)))
+}
+
+## The model's matrices for the new rows. A correlation over time built by
+## name reads its own columns, and they take precedence: illume would place
+## the rows by any times and groups passed instead, so none are, and a
+## different column named by `time` or `group` is an error rather than
+## ignored. One built from vectors has no columns of its own, so the named
+## (or recorded) ones are passed on, from the rows as expanded by `set` and
+## stacked by scenario.
+#' @keywords internal
+#' @noRd
+lmn_matrices <- function(fit, nd, cols, vc) {
+  if (is.null(vc$latent)) return(illume::ilm_matrices(fit, nd))
+  own <- attr(illume::ilm_cells(fit), "vars")
+  if (is.null(own)) {
+    if (is.null(cols$time) || is.null(cols$group))
+      stop("the model's correlation over time was built from vectors, so the new rows' times ",
+           "and series must be named: give `time` and `group`, the columns of `newdata` ",
+           "holding them, such as time = \"week\", group = \"region\".", call. = FALSE)
+    return(illume::ilm_matrices(fit, nd, time = nd[[cols$time]], group = nd[[cols$group]]))
+  }
+  term <- paste0("ilm_", vc$latent$type, "(~ ", own[["time"]], " | ", own[["group"]], ")")
+  for (a in c("time", "group")) {
+    if (isTRUE(cols$named[[a]]) && !identical(cols[[a]], unname(own[[a]])))
+      stop("`", a, " = \"", cols[[a]], "\"` names column '", cols[[a]], "', but the model's ",
+           "correlation over time, ", term, ", uses '", own[[a]], "', and the model can only use ",
+           "its own. Leave `", a, "` out, or give `", a, " = \"", own[[a]], "\"`.", call. = FALSE)
+    ## rows from ilm_future() built around another column leave the term's own
+    ## missing; illume would stop without saying why
+    col <- own[[a]]
+    if (!isTRUE(cols$named[[a]]) && !is.null(cols[[a]]) && !identical(cols[[a]], unname(col)) &&
+        (!col %in% names(nd) || anyNA(nd[[col]])))
+      stop("the rows from ilm_future() record '", cols[[a]], "' as their ",
+           if (a == "time") "time" else "series", " column, but the model's correlation over time, ",
+           term, ", uses '", col, "', which these rows leave missing. Call ilm_future() with ",
+           a, " = \"", col, "\", or fill in '", col, "'.", call. = FALSE)
+  }
+  illume::ilm_matrices(fit, nd)
 }
 
 
@@ -560,29 +659,63 @@ lmn_warn_few_groups <- function(spec, m, dr, target, reml = FALSE) {
 ## changes, so forecasts' intervals leave out a change in it. A stochastic trend
 ## (a random walk, illume's ilm_rw1()) lets the level move, and they widen with
 ## the horizon. Warned when rows lie past the data and there is no random walk.
-## The time variable comes from the correlation over time, or from
-## ilm_future()'s rows.
+## The time variable comes from the correlation over time built by name, or
+## else from the columns `time` and `group` name or ilm_future() recorded.
+## A random slope in time (time on the left of the bar) gives each unit a
+## trend of its own; grouping by time, as in (1 | week), is not a trend.
 #' @keywords internal
 #' @noRd
-lmn_warn_trend <- function(fit, newdata, nd, m, vc) {
+lmn_warn_trend <- function(fit, cols, nd, m, vc) {
   if (identical(vc$latent$type, "rw1")) return(invisible(FALSE))
   vars <- if (!is.null(m$ar)) attr(illume::ilm_cells(fit), "vars") else NULL
-  tv <- if (!is.null(vars)) vars[["time"]] else attr(newdata, "time")
-  gv <- if (!is.null(vars)) vars[["group"]] else attr(newdata, "group")
+  tv <- if (!is.null(vars)) vars[["time"]] else cols$time
+  gv <- if (!is.null(vars)) vars[["group"]] else cols$group
   if (is.null(tv)) return(invisible(FALSE))
   ahead <- if (!is.null(m$ar)) any(is.na(m$ar$cell) & is.na(m$ar$next_cell) & !is.na(m$ar$prev_cell))
-    else !is.null(nd$horizon) && any(nd$horizon > 0, na.rm = TRUE)
+    else lmn_rows_ahead(fit, nd, tv, gv)
   if (!ahead) return(invisible(FALSE))
   labs <- attr(stats::terms(stats::formula(fit)), "term.labels")
-  labs <- labs[!grepl("|", labs, fixed = TRUE)]
-  trend <- labs[vapply(labs, function(l) lmn_uses_outside(str2lang(l), tv), TRUE)]
-  if (!length(trend)) return(invisible(FALSE))
-  lmn_signal("trend", time = tv, terms = paste(trend, collapse = ", "),
+  bar <- grepl("|", labs, fixed = TRUE)
+  fixed <- labs[!bar][vapply(labs[!bar], function(l) lmn_uses_outside(str2lang(l), tv), TRUE)]
+  slopes <- labs[bar][vapply(labs[bar], function(l) {
+    e <- str2lang(l)
+    is.call(e) && as.character(e[[1]]) %in% c("|", "||") && lmn_uses_outside(e[[2]], tv)
+  }, TRUE)]
+  if (!length(fixed) && !length(slopes)) return(invisible(FALSE))
+  lmn_signal("trend", time = tv,
+             terms = paste(c(fixed, if (length(slopes))
+               paste0("(", slopes, "), a random slope")), collapse = ", "),
+             slopes = if (!length(slopes)) "" else lmn_txt$trend_slopes,
              group = if (is.null(gv)) "series" else gv,
              instead = if (is.null(vc$latent)) "" else
                paste0(" (in place of the model's ", vc$latent$type,
                       " term: a model has one correlation over time)"))
   invisible(TRUE)
+}
+
+## Are the new rows past the data? Rows from ilm_future() say so by their
+## horizon; others by their time against the last time the fit saw in their
+## series (any series, for one the fit has not seen). The fit's times are in
+## its model frame, or, when time enters only inside a function such as
+## poly(t, 2), in the variables illume keeps beside it (`data_extra`, an
+## element of the fit rather than an exported accessor).
+#' @keywords internal
+#' @noRd
+lmn_rows_ahead <- function(fit, nd, tv, gv) {
+  if (!is.null(nd$horizon)) return(any(nd$horizon > 0, na.rm = TRUE))
+  mf <- stats::model.frame(fit)
+  if (!tv %in% names(mf) && is.data.frame(fit$data_extra) && tv %in% names(fit$data_extra) &&
+      nrow(fit$data_extra) == nrow(mf))
+    mf[[tv]] <- fit$data_extra[[tv]]
+  if (!tv %in% names(mf) || !tv %in% names(nd)) return(FALSE)
+  t_fit <- as.numeric(mf[[tv]])
+  last <- rep(max(t_fit, na.rm = TRUE), nrow(nd))
+  if (!is.null(gv) && gv %in% names(mf) && gv %in% names(nd)) {
+    by_g <- tapply(t_fit, as.character(mf[[gv]]), max, na.rm = TRUE)
+    seen <- as.vector(by_g[as.character(nd[[gv]])])
+    last <- ifelse(is.na(seen), last, seen)
+  }
+  any(as.numeric(nd[[tv]]) > last, na.rm = TRUE)
 }
 
 ## Does `expr` use the variable `v` anywhere but inside a periodic term?

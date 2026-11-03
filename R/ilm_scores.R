@@ -57,7 +57,7 @@
 #'   forecast's lag: 1, or the season's length for the seasonal naive.
 #' - **`naive = ilm_naive_scale(train, time =, group =, response =)`**: the
 #'   scale computed once and passed in. Use it when the prediction doesn't know
-#'   its time column (it has no correlation over time), or when several
+#'   its time column (see *Time and series columns* in [ilm_predict()]), or when several
 #'   models' predictions must share one scale, so their scaled errors compare
 #'   on the same footing.
 #'
@@ -140,9 +140,10 @@ lmn_naive_from_history <- function(pred, history, period) {
     stop("`history` must be the data frame the model was trained on.", call. = FALSE)
   m <- pred$meta
   if (is.null(m$time))
-    stop("`history =` needs the prediction's time column, and this prediction has none (it has ",
-         "no correlation over time), so the series' order in the history is unknown. Give the ",
-         "scale directly instead:\n  ilm_scores(pred, y, rules = \"mase\", naive = ilm_naive_scale(",
+    stop("`history =` needs the prediction's time column, and this prediction has none (neither ",
+         "the model nor the rows said which it is; ilm_predict() and ilm_forecast() take it as ",
+         "`time =`), so the series' order in the history is unknown. Give the scale directly ",
+         "instead:\n  ilm_scores(pred, y, rules = \"mase\", naive = ilm_naive_scale(",
          "history, time = \"<time column>\", group = \"<series column>\", response = \"",
          m$response %||% "<response column>", "\"))", call. = FALSE)
   lmn_naive_scale(history, time = m$time, group = m$series, response = m$response, period = period)

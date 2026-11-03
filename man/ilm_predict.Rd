@@ -44,8 +44,9 @@ terms.}
 \item{seed}{Seed for the draws. The caller's random-number state is
 restored afterwards.}
 
-\item{time, group}{For a correlation over time built from vectors, the new
-rows' times and groups, passed on to \code{illume::ilm_matrices()}.}
+\item{time, group}{The names of the columns of \code{newdata} holding time and the
+series, such as \verb{time = "week", group = "region"}; see \emph{Time and series
+columns}. Needed only where neither the model nor the rows say.}
 }
 \value{
 A predictive distribution, class \code{"ilm_pred"}: see \emph{The prediction
@@ -116,6 +117,30 @@ expected value beside it, as \code{mean}; for counts it can be well above the
 estimate at long horizons (see \code{\link[=as.data.frame.ilm_pred]{as.data.frame.ilm_pred()}}).
 }
 
+\section{Time and series columns}{
+
+A prediction records which of its columns hold time and the series, for the
+trend check (see \emph{Checks}) and for scaled errors read from the history
+(\code{\link[=ilm_scores]{ilm_scores()}}'s \verb{history =}). It takes them from, in turn:
+\itemize{
+\item a correlation over time built by name, such as \code{ilm_ar1(~ week | region)}:
+its own columns. Naming a different column in \code{time} or \code{group} is an
+error, since the model can use only its own, and so are rows from
+\code{\link[=ilm_future]{ilm_future()}} built around a different column that leave the model's own
+missing;
+\item \code{time} and \code{group}, which name columns of \code{newdata};
+\item the rows \code{\link[=ilm_future]{ilm_future()}} built, which record their columns.
+}
+
+A model with time only in its formula, such as a trend or a random slope in
+time, has no correlation over time to say. Rows from \code{\link[=ilm_future]{ilm_future()}} say for
+it; rows made otherwise, or changed by \code{merge()} or \code{subset()}, which drop
+what \code{ilm_future()} recorded, need \code{time} and \code{group}. A correlation over
+time built from vectors has no columns of its own: it takes the ones \code{time}
+and \code{group} name, or else the ones \code{\link[=ilm_future]{ilm_future()}} recorded, and with
+neither, the prediction stops.
+}
+
 \section{Covariates given as draws}{
 
 A covariate that is not known in advance, such as next month's
@@ -172,7 +197,7 @@ What each check means and what to do about it, in the words it is printed with. 
 \item \strong{few groups, new units} (warn): a random term has k levels, fewer than about 20. With so few groups the variance between them is poorly determined: the reference found its standard error too small with 50 groups or fewer, for linear models fitted by restricted maximum likelihood. In limn's coverage study with 8 groups, intervals for a new unit's observation covered 0.87 to 0.90 at 90\%. Reference: Maas and Hox (2005), Methodology 1, 86-92, pp. 86 and 89-90. Refit with reml = TRUE in illume::ilm_model(): restricted maximum likelihood is almost always at least as good as maximum likelihood, and sometimes better, especially at estimating variances (the reference, p. 89, citing Browne 1998). In limn's prototype study of few groups (studies/prototypes/) it raised 8-group coverage from 0.872 to 0.892 (Poisson) and from 0.891 to 0.903 (gaussian).
 \item \strong{few groups, new units, REML fit} (warn): a random term has k levels, fewer than about 20. With so few groups the variance between them is poorly determined: the reference found its standard error too small with 50 groups or fewer, for linear models fitted by restricted maximum likelihood. In limn's coverage study with 8 groups, intervals for a new unit's observation covered 0.87 to 0.90 at 90\%. Reference: Maas and Hox (2005), Methodology 1, 86-92, pp. 86 and 89-90. The fit already used restricted maximum likelihood (REML), the refit this check otherwise suggests. In limn's prototype study of few groups (studies/prototypes/), with REML and 8 groups of 6, 90\% intervals for a new unit's observation covered 0.892 (Poisson) and 0.903 (gaussian), with simulation standard errors of 0.004 to 0.005. More groups is the sure cure.
 \item \strong{unseen levels} (note): Some of the rows name a level the fit has not seen. Under groups = "fitted" a unit with no estimated effects can only be predicted as a new one. They are predicted as new units, with effects drawn from the fitted distribution, and marked in the new_level column. If they were meant to be units in the fit, check how their levels are spelt.
-\item \strong{deterministic trend} (warn): The fixed part trends in \code{time} (its trend terms). Forecasts past the data assume that the trend's slope does not change (the reference), so their intervals leave out any change in it (limn's own reasoning). Reference: Hyndman and Athanasopoulos (2021), Forecasting: Principles and Practice, 3rd edition, section 10.4. For longer horizons a stochastic trend is safer (the reference): a random walk, ar = ilm_rw1(~ time | series), lets the level move, and the intervals widen with the horizon.
+\item \strong{deterministic trend} (warn): The model trends in \code{time} (its trend terms). Forecasts past the data assume that the trend's slope does not change (the reference), so their intervals leave out any change in it (limn's own reasoning). A random slope in time gives each unit a trend of its own, and forecasts assume that each unit's slope does not change either (limn's own reasoning). Reference: Hyndman and Athanasopoulos (2021), Forecasting: Principles and Practice, 3rd edition, section 10.4. For longer horizons a stochastic trend is safer (the reference): a random walk, ar = ilm_rw1(~ time | series), lets the level move, and the intervals widen with the horizon.
 \item \strong{boundary draws} (fail): Some of the draws of a variance are not finite. Its estimate (SD near zero) is at the edge of its range, where the data cannot resolve it, and the fit did not hold it there. Predict with uncertainty = "fixed", which holds the variances at their estimates, or refit with boundary = "avoid" in illume::ilm_model(), which keeps the variance off the edge with a small penalty.
 \item \strong{draws not computed} (fail): Some of the draws of the mean could not be computed. Averaging over units failed where a draw's variance reaches a large value, as happens when the variance is poorly determined, for instance with few groups. Predict with uncertainty = "fixed", which holds the variances at their estimates.
 \item \strong{draws not computed} (fail): Some of the draws of the mean could not be computed. A draw's value overflowed or was undefined. Predict with uncertainty = "fixed", which holds the variances at their estimates.
@@ -209,8 +234,8 @@ average also \code{weight}.
 \code{groups} (one \code{"term = choice"} per term), \code{uncertainty}, \code{draws} (the
 number of parameter draws), \code{nsim}, \code{family}, \code{seed}, and \code{response}, the
 name of the response column. With covariates given as draws it also has
-\code{covariate_draws} and \code{drawn}. With a correlation over time it has \code{time}
-and \code{series}, the columns holding them.
+\code{covariate_draws} and \code{drawn}. Where its time and series columns are known
+(see \emph{Time and series columns}), it has \code{time} and \code{series}, their names.
 \item \code{checks}: a data frame of the checks the prediction raised (see \emph{Checks}),
 one row each, with columns \code{id}, \code{check}, \code{status}, \code{detail}, \code{cause},
 \code{suggestion}, \code{reference} and \code{values}. It has no rows when nothing was

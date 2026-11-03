@@ -2,6 +2,25 @@
 
 * limn is licensed under the GNU General Public License, version 2 or (at
   your option) any later version: GPL (>= 2).
+* A prediction knows its time and series columns without a correlation over
+  time (`ilm_predict()`, *Time and series columns*):
+  - rows from `ilm_future()` say which they are, so a model with time only in
+    its formula, a trend or a random slope, gets the trend check, and
+    `ilm_scores(history = )` works for it;
+  - `time` and `group` in `ilm_predict()` and `ilm_forecast()` now name columns
+    of `newdata`, for rows made otherwise or changed by `merge()` or
+    `subset()`. They used to take the times and groups themselves, for a
+    correlation over time built from vectors; such a model now takes them as
+    columns, which follow the rows through `set` and scenarios;
+  - a correlation over time built by name keeps its own columns. Naming a
+    different one is an error, and so are rows from `ilm_future()` built
+    around a different time or series column, which leave the model's own
+    missing.
+* `ilm_forecast()` takes `time` and `group` as arguments of its own. Passed
+  on through `...`, `group =` was taken as `groups =`.
+* The trend check also covers a random slope in time, which gives each unit a
+  trend of its own, and rows past the data that did not come from
+  `ilm_future()`. Grouping by time, as in `(1 | week)`, is not a trend.
 * The help for cross-validation and model comparison cites its sources by
   section, equation and page, and the comparison plots say how to read them.
   The few-origins warning of `ilm_compare()` now cites Coroneo and Iacone

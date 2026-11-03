@@ -19,8 +19,8 @@
 #' `checks`.
 #'
 #' @inheritParams ilm_predict
-#' @param ... Other arguments to [ilm_predict()]: `uncertainty`, `set`, `nsim`,
-#'   `seed`, `time` and `group`.
+#' @param ... Other arguments to [ilm_predict()]: `uncertainty`, `set`, `nsim`
+#'   and `seed`.
 #' @return A predictive distribution, as from [ilm_predict()]; *The prediction
 #'   object* there lists its elements.
 #' @seealso [ilm_future()] for the rows, [ilm_covariate_paths()] for covariates
@@ -38,6 +38,9 @@
 #' ilm_plot_fan(fc, time = "t", group = "id", history = d, response = "y")
 #' @export
 ilm_forecast <- function(fit, newdata, target = c("response", "mean", "link"),
-                         groups = "fitted", ...) {
-  ilm_predict(fit, newdata, target = match.arg(target), groups = groups, ...)
+                         groups = "fitted", time = NULL, group = NULL, ...) {
+  ## `time` and `group` are arguments here, not passed in `...`: there, R would
+  ## match `group =` to `groups` by its first letters
+  ilm_predict(fit, newdata, target = match.arg(target), groups = groups, time = time,
+              group = group, ...)
 }
