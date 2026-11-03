@@ -56,7 +56,9 @@
 #' ([ilm_scores()]'s `history =`). It takes them from, in turn:
 #' * a correlation over time built by name, such as `ilm_ar1(~ week | region)`:
 #'   its own columns. Naming a different column in `time` or `group` is an
-#'   error, since the model can use only its own;
+#'   error, since the model can use only its own, and so are rows from
+#'   [ilm_future()] built around a different column that leave the model's own
+#'   missing;
 #' * `time` and `group`, which name columns of `newdata`;
 #' * the rows [ilm_future()] built, which record their columns.
 #'
@@ -380,6 +382,15 @@ lmn_matrices <- function(fit, nd, cols, vc) {
       stop("`", a, " = \"", cols[[a]], "\"` names column '", cols[[a]], "', but the model's ",
            "correlation over time, ", term, ", uses '", own[[a]], "', and the model can only use ",
            "its own. Leave `", a, "` out, or give `", a, " = \"", own[[a]], "\"`.", call. = FALSE)
+    ## rows from ilm_future() built around another column leave the term's own
+    ## missing; illume would stop without saying why
+    col <- own[[a]]
+    if (!isTRUE(cols$named[[a]]) && !is.null(cols[[a]]) && !identical(cols[[a]], unname(col)) &&
+        (!col %in% names(nd) || anyNA(nd[[col]])))
+      stop("the rows from ilm_future() record '", cols[[a]], "' as their ",
+           if (a == "time") "time" else "series", " column, but the model's correlation over time, ",
+           term, ", uses '", col, "', which these rows leave missing. Call ilm_future() with ",
+           a, " = \"", col, "\", or fill in '", col, "'.", call. = FALSE)
   }
   illume::ilm_matrices(fit, nd)
 }

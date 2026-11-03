@@ -125,7 +125,9 @@ trend check (see \emph{Checks}) and for scaled errors read from the history
 \itemize{
 \item a correlation over time built by name, such as \code{ilm_ar1(~ week | region)}:
 its own columns. Naming a different column in \code{time} or \code{group} is an
-error, since the model can use only its own;
+error, since the model can use only its own, and so are rows from
+\code{\link[=ilm_future]{ilm_future()}} built around a different column that leave the model's own
+missing;
 \item \code{time} and \code{group}, which name columns of \code{newdata};
 \item the rows \code{\link[=ilm_future]{ilm_future()}} built, which record their columns.
 }

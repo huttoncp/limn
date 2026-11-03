@@ -102,6 +102,22 @@ test_that("a correlation over time built by name keeps its own columns", {
                ilm_forecast(f$by_name, f$nd, target = "link", nsim = 20, seed = 1))
 })
 
+test_that("rows from ilm_future() built around another time column say so", {
+  f <- ar_pair()
+  set.seed(3)
+  a <- expand.grid(t = 1:12, g = factor(c("a", "b", "c")))
+  a$y <- 10; a$week <- a$t + 100
+  ## ilm_future() treats the model's own time column as one that varies, and
+  ## leaves it missing
+  fut <- suppressMessages(ilm_future(a, time = "week", group = "g", h = 2, response = "y"))
+  expect_error(ilm_forecast(f$by_name, fut, nsim = 20),
+               "record 'week' as their time column.*ilm_ar1[(]~ t [|] g[)], uses 't'.*time = \"t\", or fill in 't'")
+  ## filled in, the term's own column is used
+  fut$t <- fut$week - 100
+  expect_equal(ilm_forecast(f$by_name, fut, target = "link", nsim = 20, seed = 1)$estimate,
+               ilm_forecast(f$by_name, fut[c("t", "g")], target = "link", nsim = 20, seed = 1)$estimate)
+})
+
 test_that("a correlation over time built from vectors takes its time and series as columns", {
   f <- ar_pair()
   nd <- data.frame(week = f$nd$t, series = f$nd$g)

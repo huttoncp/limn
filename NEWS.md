@@ -12,8 +12,10 @@
     `subset()`. They used to take the times and groups themselves, for a
     correlation over time built from vectors; such a model now takes them as
     columns, which follow the rows through `set` and scenarios;
-  - a correlation over time built by name keeps its own columns, and naming a
-    different one is an error.
+  - a correlation over time built by name keeps its own columns. Naming a
+    different one is an error, and so are rows from `ilm_future()` built
+    around a different time or series column, which leave the model's own
+    missing.
 * `ilm_forecast()` takes `time` and `group` as arguments of its own. Passed
   on through `...`, `group =` was taken as `groups =`.
 * The trend check also covers a random slope in time, which gives each unit a
