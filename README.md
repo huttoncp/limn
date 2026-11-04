@@ -1,4 +1,4 @@
-# limn
+# limn <img src="man/figures/logo.png" align="right" height="139" alt="limn hex logo" />
 
 **A Projection Engine for Distributional Forecasting.**
 
