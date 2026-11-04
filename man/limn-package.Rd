@@ -89,6 +89,7 @@ illume::ilm_calibration(p, test$y)
 Useful links:
 \itemize{
   \item \url{https://github.com/huttoncp/limn}
+  \item \url{https://huttoncp.github.io/limn/}
   \item Report bugs at \url{https://github.com/huttoncp/limn/issues}
 }
 
