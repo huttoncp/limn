@@ -828,6 +828,10 @@ lmn_assemble <- function(fit, m, dr, spec, dist, target, seed, noise = TRUE) {
   ## design's columns do not
   by_name <- function(block, names, prefix = NULL) {
     terms <- map$term[map$block == block]
+    ## illume's design leaves a smooth's unpenalised column unnamed; the columns
+    ## and the coefficients are in the same order
+    blank <- !nzchar(names)
+    if (any(blank) && length(names) == length(terms)) names[blank] <- terms[blank]
     k <- match(names, terms)
     if (!is.null(prefix)) k[is.na(k)] <- match(paste0(prefix, names[is.na(k)]), terms)
     r <- map$row[map$block == block][k]
