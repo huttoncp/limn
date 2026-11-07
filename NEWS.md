@@ -24,6 +24,15 @@
 * The trend check also covers a random slope in time, which gives each unit a
   trend of its own, and rows past the data that did not come from
   `ilm_future()`. Grouping by time, as in `(1 | week)`, is not a trend.
+* The trend check also covers a smooth of time. Many smooths continue past the
+  data as a straight line (Clark and Wells 2023, section 1), and illume's
+  default smooth does. A periodic smooth, `s(t, bs = "cc")` or `"cp"`, is not
+  a trend.
+* The trend check's advice offers both choices in place of the trend, and says
+  that either is an assumption: `ilm_ar1()` or `ilm_car1()` when the series
+  should return to a level, and `ilm_rw1()` when its level should be free to
+  move. A model that already has an AR(1) or CAR(1) term is told to take the
+  trend out and keep that term.
 * The help for cross-validation and model comparison cites its sources by
   section, equation and page, and the comparison plots say how to read them.
   The few-origins warning of `ilm_compare()` now cites Coroneo and Iacone

@@ -62,9 +62,9 @@
 #' * `time` and `group`, which name columns of `newdata`;
 #' * the rows [ilm_future()] built, which record their columns.
 #'
-#' A model with time only in its formula, such as a trend or a random slope in
-#' time, has no correlation over time to say. Rows from [ilm_future()] say for
-#' it; rows made otherwise, or changed by `merge()` or `subset()`, which drop
+#' A model with time only in its formula, such as a trend, a smooth of time or
+#' a random slope in time, has no correlation over time to say. Rows from
+#' [ilm_future()] say for it; rows made otherwise, or changed by `merge()` or `subset()`, which drop
 #' what `ilm_future()` recorded, need `time` and `group`. A correlation over
 #' time built from vectors has no columns of its own: it takes the ones `time`
 #' and `group` name, or else the ones [ilm_future()] recorded, and with
@@ -663,6 +663,17 @@ lmn_warn_few_groups <- function(spec, m, dr, target, reml = FALSE) {
 ## else from the columns `time` and `group` name or ilm_future() recorded.
 ## A random slope in time (time on the left of the bar) gives each unit a
 ## trend of its own; grouping by time, as in (1 | week), is not a trend.
+## A smooth of time is a trend too: many continue past the data as a straight
+## line (Clark and Wells 2023, section 1). Measured by limn on illume 0.0.8.9003
+## (mgcv 1.9.1), 30 steps past 60: the default thin-plate basis and the "cr",
+## "ps" and "bs" bases went straight on; s(t, m = 1) stayed flat; "gp" bent;
+## the periodic "cc" and "cp" kept cycling, and are not trends.
+## The advice offers both correlations over time, since either is an assumption.
+## An AR(1) or CAR(1) term's forecasts go back to zero and the spread it adds
+## levels off, as a stationary series' do (fpp3 sections 9.5 and 9.8); that a
+## latent term behaves so, and that ilm_car1()'s does (its help gives each step
+## as rho to the power of the gap), is limn's own reasoning. A trend left in
+## the fixed part still carries the forecast, with uncertainty that grows.
 #' @keywords internal
 #' @noRd
 lmn_warn_trend <- function(fit, cols, nd, m, vc) {
@@ -682,15 +693,29 @@ lmn_warn_trend <- function(fit, cols, nd, m, vc) {
     is.call(e) && as.character(e[[1]]) %in% c("|", "||") && lmn_uses_outside(e[[2]], tv)
   }, TRUE)]
   if (!length(fixed) && !length(slopes)) return(invisible(FALSE))
+  smooth <- vapply(fixed, function(l) lmn_is_smooth(str2lang(l)), TRUE)
+  gv <- if (is.null(gv)) "series" else gv
+  latent <- vc$latent$type
   lmn_signal("trend", time = tv,
-             terms = paste(c(fixed, if (length(slopes))
+             terms = paste(c(ifelse(smooth, paste0(fixed, ", a smooth"), fixed), if (length(slopes))
                paste0("(", slopes, "), a random slope")), collapse = ", "),
              slopes = if (!length(slopes)) "" else lmn_txt$trend_slopes,
-             group = if (is.null(gv)) "series" else gv,
-             instead = if (is.null(vc$latent)) "" else
-               paste0(" (in place of the model's ", vc$latent$type,
+             smooths = if (!any(smooth)) "" else lmn_txt$trend_smooths,
+             ar = if (!is.null(latent) && latent %in% c("ar1", "car1"))
+               paste0("take the trend out, and keep the model's ", latent, " term") else
+               paste0("ar = ilm_ar1(~ ", tv, " | ", gv, "), or ilm_car1() for uneven times"),
+             group = gv,
+             instead = if (is.null(latent)) "" else
+               paste0(" (in place of the model's ", latent,
                       " term: a model has one correlation over time)"))
   invisible(TRUE)
+}
+
+## A smooth term, as illume writes them (mgcv's s(), te(), ti() and t2()).
+#' @keywords internal
+#' @noRd
+lmn_is_smooth <- function(expr) {
+  is.call(expr) && is.name(expr[[1]]) && as.character(expr[[1]]) %in% c("s", "te", "ti", "t2")
 }
 
 ## Are the new rows past the data? Rows from ilm_future() say so by their
@@ -728,6 +753,10 @@ lmn_uses_outside <- function(expr, v) {
   fname <- if (is.name(fn)) as.character(fn)
     else if (is.call(fn) && identical(fn[[1]], as.name("::"))) as.character(fn[[3]]) else ""
   if (fname %in% c("ilm_fourier", "ilm_cyclic", "iml_fourier", "iml_cyclic")) return(FALSE)
+  if (lmn_is_smooth(expr)) {
+    bs <- tryCatch(eval(expr$bs, baseenv()), error = function(e) NULL)
+    if (length(bs) && all(bs %in% c("cc", "cp"))) return(FALSE)   # periodic
+  }
   any(vapply(as.list(expr)[-1], lmn_uses_outside, TRUE, v = v))
 }
 
