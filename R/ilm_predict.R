@@ -64,8 +64,8 @@
 #'
 #' A model with time only in its formula, such as a trend, a smooth of time or
 #' a random slope in time, has no correlation over time to say. Rows from
-#' [ilm_future()] say for it; rows made otherwise, or changed by `merge()` or `subset()`, which drop
-#' what `ilm_future()` recorded, need `time` and `group`. A correlation over
+#' [ilm_future()] say for it; rows made otherwise, or changed by `merge()` or
+#' `subset()`, which drop what `ilm_future()` recorded, need `time` and `group`. A correlation over
 #' time built from vectors has no columns of its own: it takes the ones `time`
 #' and `group` name, or else the ones [ilm_future()] recorded, and with
 #' neither, the prediction stops.
@@ -670,7 +670,8 @@ lmn_warn_few_groups <- function(spec, m, dr, target, reml = FALSE) {
 ## the periodic "cc" and "cp" kept cycling, and are not trends.
 ## The advice offers both correlations over time, since either is an assumption.
 ## An AR(1) or CAR(1) term's forecasts go back to zero and the spread it adds
-## levels off, as a stationary series' do (fpp3 sections 9.5 and 9.8); that a
+## levels off, as a stationary series' do (fpp3 section 9.5, "Understanding
+## ARIMA models", and section 9.8, "Prediction intervals"); that a
 ## latent term behaves so, and that ilm_car1()'s does (its help gives each step
 ## as rho to the power of the gap), is limn's own reasoning. A trend left in
 ## the fixed part still carries the forecast, with uncertainty that grows.
@@ -696,14 +697,15 @@ lmn_warn_trend <- function(fit, cols, nd, m, vc) {
   smooth <- vapply(fixed, function(l) lmn_is_smooth(str2lang(l)), TRUE)
   gv <- if (is.null(gv)) "series" else gv
   latent <- vc$latent$type
-  lmn_signal("trend", time = tv,
-             terms = paste(c(ifelse(smooth, paste0(fixed, ", a smooth"), fixed), if (length(slopes))
-               paste0("(", slopes, "), a random slope")), collapse = ", "),
+  terms <- c(ifelse(smooth, paste0(fixed, ", a smooth"), fixed),
+             if (length(slopes)) paste0("(", slopes, "), a random slope"))
+  ar <- if (!is.null(latent) && latent %in% c("ar1", "car1"))
+    paste0("take the trend out, and keep the model's ", latent, " term") else
+    paste0("ar = ilm_ar1(~ ", tv, " | ", gv, "), or ilm_car1() for uneven times")
+  lmn_signal("trend", time = tv, terms = paste(terms, collapse = ", "),
              slopes = if (!length(slopes)) "" else lmn_txt$trend_slopes,
              smooths = if (!any(smooth)) "" else lmn_txt$trend_smooths,
-             ar = if (!is.null(latent) && latent %in% c("ar1", "car1"))
-               paste0("take the trend out, and keep the model's ", latent, " term") else
-               paste0("ar = ilm_ar1(~ ", tv, " | ", gv, "), or ilm_car1() for uneven times"),
+             ar = ar,
              group = gv,
              instead = if (is.null(latent)) "" else
                paste0(" (in place of the model's ", latent,
@@ -858,7 +860,8 @@ lmn_assemble <- function(fit, m, dr, spec, dist, target, seed, noise = TRUE) {
   by_name <- function(block, names, prefix = NULL) {
     terms <- map$term[map$block == block]
     ## illume's design leaves a smooth's unpenalised column unnamed; the columns
-    ## and the coefficients are in the same order
+    ## and the coefficients are in the same order. This can go once illume
+    ## names the column.
     blank <- !nzchar(names)
     if (any(blank) && length(names) == length(terms)) names[blank] <- terms[blank]
     k <- match(names, terms)

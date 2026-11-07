@@ -18,9 +18,10 @@
     missing.
 * `ilm_forecast()` takes `time` and `group` as arguments of its own. Passed
   on through `...`, `group =` was taken as `groups =`.
-* `ilm_predict()`, and everything built on it, works for a fit with a smooth.
-  It stopped with "internal: no 'beta' draw", since illume's design leaves a
-  smooth's unpenalised column unnamed.
+* `ilm_predict()`, and everything built on it, works for a fit with a smooth
+  that illume can predict from. It stopped with "internal: no 'beta' draw",
+  since illume's design leaves a smooth's unpenalised column unnamed. A
+  factor smooth, `s(t, id, bs = "fs")`, and `t2()` still stop, inside illume.
 * The trend check also covers a random slope in time, which gives each unit a
   trend of its own, and rows past the data that did not come from
   `ilm_future()`. Grouping by time, as in `(1 | week)`, is not a trend.
