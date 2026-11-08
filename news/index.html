@@ -50,7 +50,11 @@
 </ul></li>
 <li>
 <code><a href="../reference/ilm_forecast.html">ilm_forecast()</a></code> takes <code>time</code> and <code>group</code> as arguments of its own. Passed on through <code>...</code>, <code>group =</code> was taken as <code>groups =</code>.</li>
+<li>
+<code><a href="../reference/ilm_predict.html">ilm_predict()</a></code>, and everything built on it, works for a fit with a smooth that illume can predict from. It stopped with “internal: no ‘beta’ draw”, since illume’s design leaves a smooth’s unpenalised column unnamed. A factor smooth, <code>s(t, id, bs = "fs")</code>, and <code>t2()</code> still stop, inside illume.</li>
 <li>The trend check also covers a random slope in time, which gives each unit a trend of its own, and rows past the data that did not come from <code><a href="../reference/ilm_future.html">ilm_future()</a></code>. Grouping by time, as in <code>(1 | week)</code>, is not a trend.</li>
+<li>The trend check also covers a smooth of time. Many smooths continue past the data as a straight line (Clark and Wells 2023, section 1), and illume’s default smooth does. A periodic smooth, <code>s(t, bs = "cc")</code> or <code>"cp"</code>, is not a trend.</li>
+<li>The trend check’s advice offers both choices in place of the trend, and says that either is an assumption: <code><a href="https://rdrr.io/pkg/illume/man/ilm_ar1.html" class="external-link">ilm_ar1()</a></code> or <code><a href="https://rdrr.io/pkg/illume/man/ilm_car1.html" class="external-link">ilm_car1()</a></code> when the series should return to a level, and <code><a href="https://rdrr.io/pkg/illume/man/ilm_rw1.html" class="external-link">ilm_rw1()</a></code> when its level should be free to move. A model that already has an AR(1) or CAR(1) term is told to take the trend out and keep that term.</li>
 <li>The help for cross-validation and model comparison cites its sources by section, equation and page, and the comparison plots say how to read them. The few-origins warning of <code><a href="../reference/ilm_compare.html">ilm_compare()</a></code> now cites Coroneo and Iacone
 <ol start="2020" style="list-style-type: decimal"><li>by section (4.2 and 5) instead of by page.</li>
 </ol></li>

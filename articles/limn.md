@@ -17,6 +17,16 @@ predict, forecast, total, score, check, remedy and compare.
 library(limn)
 #> Loading required package: illume
 #> Loading required package: illumex
+#> Registered S3 methods overwritten by 'illume':
+#>   method             from   
+#>   c.ilm_remedies     illumex
+#>   print.ilm_remedies illumex
+#> 
+#> Attaching package: 'illume'
+#> The following objects are masked from 'package:illumex':
+#> 
+#>     ilm_apply_remedy, ilm_remedies, ilm_remedy_table, iml_apply_remedy,
+#>     iml_remedies, iml_remedy_table
 ```
 
 ## The data and a first model

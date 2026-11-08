@@ -11,6 +11,16 @@ model’s trend finds something to change, and the change is made.
 library(limn)
 #> Loading required package: illume
 #> Loading required package: illumex
+#> Registered S3 methods overwritten by 'illume':
+#>   method             from   
+#>   c.ilm_remedies     illumex
+#>   print.ilm_remedies illumex
+#> 
+#> Attaching package: 'illume'
+#> The following objects are masked from 'package:illumex':
+#> 
+#>     ilm_apply_remedy, ilm_remedies, ilm_remedy_table, iml_apply_remedy,
+#>     iml_remedies, iml_remedy_table
 ```
 
 ## The data
@@ -74,13 +84,21 @@ fit_ar1 <- illume::ilm_model(demand ~ temp + week + (1 | region), data = demand,
                              verbose = FALSE)
 fc_ar1 <- ilm_forecast(fit_ar1, scenario, nsim = 500)
 #> Warning: The model trends in `week` (week). Forecasts past the data assume that
-#> the trend's slope does not change (the reference), so their intervals leave out
-#> any change in it (limn's own reasoning). Reference: Hyndman and Athanasopoulos
-#> (2021), Forecasting: Principles and Practice, 3rd edition, section 10.4. For
-#> longer horizons a stochastic trend is safer (the reference): a random walk, ar
-#> = ilm_rw1(~ week | region), lets the level move, and the intervals widen with
-#> the horizon (in place of the model's ar1 term: a model has one correlation over
-#> time).
+#> the trend's slope does not change (the reference, section 10.4), so their
+#> intervals leave out any change in it (limn's own reasoning). Reference: Hyndman
+#> and Athanasopoulos (2021), Forecasting: Principles and Practice, 3rd edition,
+#> section 10.4, with 9.5 ('Understanding ARIMA models') and 9.8 ('Prediction
+#> intervals'). A correlation over time can take the trend's place, and each
+#> choice is an assumption about the series past the data. If it should return to
+#> a level: take the trend out, and keep the model's ar1 term. Its forecasts go
+#> back to zero, so the forecast goes back to the fixed part, and the spread it
+#> adds levels off (the reference, section 9.5, 'Understanding ARIMA models', and
+#> section 9.8, 'Prediction intervals', for a series; for a latent term, and for
+#> ilm_car1(), limn's own reasoning). A trend left in the fixed part still carries
+#> the forecast, and its uncertainty still grows. If the level should be free to
+#> move: a random walk, ar = ilm_rw1(~ week | region) (in place of the model's ar1
+#> term: a model has one correlation over time), whose intervals keep widening; at
+#> longer horizons it is the safer choice (the reference, section 10.4).
 ```
 
 A trend in the fixed part assumes the growth goes on at the same rate,
@@ -208,14 +226,14 @@ carries into the total. The total demand each week:
 
 as.data.frame(ilm_aggregate(fc, by = "week"))
 #>   week n_rows estimate     mean lower_0.9 upper_0.9
-#> 1  105      6 752.7767 752.8986  735.5029  770.4155
-#> 2  106      6 761.4285 760.9168  739.5225  780.1459
-#> 3  107      6 770.1843 770.2665  747.9340  792.7353
-#> 4  108      6 779.2362 779.5880  754.9276  804.6146
-#> 5  109      6 788.9138 789.1754  762.8718  815.5906
-#> 6  110      6 797.8804 798.1998  770.3953  825.9959
-#> 7  111      6 807.4376 807.1211  777.5517  834.7061
-#> 8  112      6 815.9679 815.7236  785.8711  845.1298
+#> 1  105      6 752.7051 752.8258  735.4592  770.5413
+#> 2  106      6 761.4268 760.8440  739.3829  779.8125
+#> 3  107      6 770.1727 770.1938  747.9073  792.3231
+#> 4  108      6 779.1973 779.5153  754.7589  804.1856
+#> 5  109      6 788.8253 789.1027  762.8470  815.3769
+#> 6  110      6 797.7993 798.1270  769.9839  825.6013
+#> 7  111      6 807.4293 807.0483  777.0785  834.7435
+#> 8  112      6 816.0216 815.6509  785.2102  845.5311
 ```
 
 And each region’s total over the eight weeks, where a region’s own path
@@ -230,7 +248,7 @@ as.data.frame(ilm_aggregate(fc, by = "region"))
 #> 3     R3      8 1059.1276 1058.0628 1000.2730 1114.7952
 #> 4     R4      8  892.8681  891.2049  831.6517  946.3042
 #> 5     R5      8  913.2609  912.9567  855.7816  968.1929
-#> 6     R6      8 1089.0415 1088.1520 1025.8223 1147.7706
+#> 6     R6      8 1087.9510 1087.5699 1024.2238 1147.6992
 ```
 
 Both sets of totals come from the same draws, so the regions’ expected
@@ -241,7 +259,7 @@ totals sum to exactly the same grand total as the weeks’ do:
 c(by_week = sum(as.data.frame(ilm_aggregate(fc, by = "week"))$mean),
   by_region = sum(as.data.frame(ilm_aggregate(fc, by = "region"))$mean))
 #>   by_week by_region 
-#>   6273.89   6273.89
+#>  6273.308  6273.308
 ```
 
 ## Where next

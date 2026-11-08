@@ -80,7 +80,17 @@ model’s trend finds something to change, and the change is made.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/huttoncp/limn" class="external-link">limn</a></span><span class="op">)</span></span>
 <span><span class="co">#&gt; Loading required package: illume</span></span>
-<span><span class="co">#&gt; Loading required package: illumex</span></span></code></pre></div>
+<span><span class="co">#&gt; Loading required package: illumex</span></span>
+<span><span class="co">#&gt; Registered S3 methods overwritten by 'illume':</span></span>
+<span><span class="co">#&gt;   method             from   </span></span>
+<span><span class="co">#&gt;   c.ilm_remedies     illumex</span></span>
+<span><span class="co">#&gt;   print.ilm_remedies illumex</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Attaching package: 'illume'</span></span>
+<span><span class="co">#&gt; The following objects are masked from 'package:illumex':</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;     ilm_apply_remedy, ilm_remedies, ilm_remedy_table, iml_apply_remedy,</span></span>
+<span><span class="co">#&gt;     iml_remedies, iml_remedy_table</span></span></code></pre></div>
 <div class="section level2">
 <h2 id="the-data">The data<a class="anchor" aria-label="anchor" href="#the-data"></a>
 </h2>
@@ -133,13 +143,21 @@ with it warns:</p>
 <span>                             verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">fc_ar1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ilm_forecast.html">ilm_forecast</a></span><span class="op">(</span><span class="va">fit_ar1</span>, <span class="va">scenario</span>, nsim <span class="op">=</span> <span class="fl">500</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning: The model trends in `week` (week). Forecasts past the data assume that</span></span>
-<span><span class="co">#&gt; the trend's slope does not change (the reference), so their intervals leave out</span></span>
-<span><span class="co">#&gt; any change in it (limn's own reasoning). Reference: Hyndman and Athanasopoulos</span></span>
-<span><span class="co">#&gt; (2021), Forecasting: Principles and Practice, 3rd edition, section 10.4. For</span></span>
-<span><span class="co">#&gt; longer horizons a stochastic trend is safer (the reference): a random walk, ar</span></span>
-<span><span class="co">#&gt; = ilm_rw1(~ week | region), lets the level move, and the intervals widen with</span></span>
-<span><span class="co">#&gt; the horizon (in place of the model's ar1 term: a model has one correlation over</span></span>
-<span><span class="co">#&gt; time).</span></span></code></pre></div>
+<span><span class="co">#&gt; the trend's slope does not change (the reference, section 10.4), so their</span></span>
+<span><span class="co">#&gt; intervals leave out any change in it (limn's own reasoning). Reference: Hyndman</span></span>
+<span><span class="co">#&gt; and Athanasopoulos (2021), Forecasting: Principles and Practice, 3rd edition,</span></span>
+<span><span class="co">#&gt; section 10.4, with 9.5 ('Understanding ARIMA models') and 9.8 ('Prediction</span></span>
+<span><span class="co">#&gt; intervals'). A correlation over time can take the trend's place, and each</span></span>
+<span><span class="co">#&gt; choice is an assumption about the series past the data. If it should return to</span></span>
+<span><span class="co">#&gt; a level: take the trend out, and keep the model's ar1 term. Its forecasts go</span></span>
+<span><span class="co">#&gt; back to zero, so the forecast goes back to the fixed part, and the spread it</span></span>
+<span><span class="co">#&gt; adds levels off (the reference, section 9.5, 'Understanding ARIMA models', and</span></span>
+<span><span class="co">#&gt; section 9.8, 'Prediction intervals', for a series; for a latent term, and for</span></span>
+<span><span class="co">#&gt; ilm_car1(), limn's own reasoning). A trend left in the fixed part still carries</span></span>
+<span><span class="co">#&gt; the forecast, and its uncertainty still grows. If the level should be free to</span></span>
+<span><span class="co">#&gt; move: a random walk, ar = ilm_rw1(~ week | region) (in place of the model's ar1</span></span>
+<span><span class="co">#&gt; term: a model has one correlation over time), whose intervals keep widening; at</span></span>
+<span><span class="co">#&gt; longer horizons it is the safer choice (the reference, section 10.4).</span></span></code></pre></div>
 <p>A trend in the fixed part assumes the growth goes on at the same
 rate, and, in limn’s own reasoning, its intervals then leave out any
 change in that rate. The warning names the remedy, citing Hyndman and
@@ -247,14 +265,14 @@ week:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu"><a href="../reference/ilm_aggregate.html">ilm_aggregate</a></span><span class="op">(</span><span class="va">fc</span>, by <span class="op">=</span> <span class="st">"week"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   week n_rows estimate     mean lower_0.9 upper_0.9</span></span>
-<span><span class="co">#&gt; 1  105      6 752.7767 752.8986  735.5029  770.4155</span></span>
-<span><span class="co">#&gt; 2  106      6 761.4285 760.9168  739.5225  780.1459</span></span>
-<span><span class="co">#&gt; 3  107      6 770.1843 770.2665  747.9340  792.7353</span></span>
-<span><span class="co">#&gt; 4  108      6 779.2362 779.5880  754.9276  804.6146</span></span>
-<span><span class="co">#&gt; 5  109      6 788.9138 789.1754  762.8718  815.5906</span></span>
-<span><span class="co">#&gt; 6  110      6 797.8804 798.1998  770.3953  825.9959</span></span>
-<span><span class="co">#&gt; 7  111      6 807.4376 807.1211  777.5517  834.7061</span></span>
-<span><span class="co">#&gt; 8  112      6 815.9679 815.7236  785.8711  845.1298</span></span></code></pre></div>
+<span><span class="co">#&gt; 1  105      6 752.7051 752.8258  735.4592  770.5413</span></span>
+<span><span class="co">#&gt; 2  106      6 761.4268 760.8440  739.3829  779.8125</span></span>
+<span><span class="co">#&gt; 3  107      6 770.1727 770.1938  747.9073  792.3231</span></span>
+<span><span class="co">#&gt; 4  108      6 779.1973 779.5153  754.7589  804.1856</span></span>
+<span><span class="co">#&gt; 5  109      6 788.8253 789.1027  762.8470  815.3769</span></span>
+<span><span class="co">#&gt; 6  110      6 797.7993 798.1270  769.9839  825.6013</span></span>
+<span><span class="co">#&gt; 7  111      6 807.4293 807.0483  777.0785  834.7435</span></span>
+<span><span class="co">#&gt; 8  112      6 816.0216 815.6509  785.2102  845.5311</span></span></code></pre></div>
 <p>And each region’s total over the eight weeks, where a region’s own
 path carries into its total:</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
@@ -265,7 +283,7 @@ path carries into its total:</p>
 <span><span class="co">#&gt; 3     R3      8 1059.1276 1058.0628 1000.2730 1114.7952</span></span>
 <span><span class="co">#&gt; 4     R4      8  892.8681  891.2049  831.6517  946.3042</span></span>
 <span><span class="co">#&gt; 5     R5      8  913.2609  912.9567  855.7816  968.1929</span></span>
-<span><span class="co">#&gt; 6     R6      8 1089.0415 1088.1520 1025.8223 1147.7706</span></span></code></pre></div>
+<span><span class="co">#&gt; 6     R6      8 1087.9510 1087.5699 1024.2238 1147.6992</span></span></code></pre></div>
 <p>Both sets of totals come from the same draws, so the regions’
 expected totals sum to exactly the same grand total as the weeks’
 do:</p>
@@ -273,7 +291,7 @@ do:</p>
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>by_week <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu"><a href="../reference/ilm_aggregate.html">ilm_aggregate</a></span><span class="op">(</span><span class="va">fc</span>, by <span class="op">=</span> <span class="st">"week"</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">mean</span><span class="op">)</span>,</span>
 <span>  by_region <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu"><a href="../reference/ilm_aggregate.html">ilm_aggregate</a></span><span class="op">(</span><span class="va">fc</span>, by <span class="op">=</span> <span class="st">"region"</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">mean</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   by_week by_region </span></span>
-<span><span class="co">#&gt;   6273.89   6273.89</span></span></code></pre></div>
+<span><span class="co">#&gt;  6273.308  6273.308</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="where-next">Where next<a class="anchor" aria-label="anchor" href="#where-next"></a>

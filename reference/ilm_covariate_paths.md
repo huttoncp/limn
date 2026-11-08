@@ -104,12 +104,12 @@ fut <- ilm_future(d, time = "t", group = "id", h = 3, response = "y")
 paths <- ilm_covariate_paths(fx, fut, nsim = 200)
 head(paths)
 #>   .draw id  t           x  y horizon
-#> 1     1  a 31 -0.09111319 NA       1
-#> 2     1  a 32  0.22876583 NA       2
-#> 3     1  a 33 -0.34277032 NA       3
-#> 4     1  b 31  1.48188772 NA       1
-#> 5     1  b 32  0.47211154 NA       2
-#> 6     1  b 33  0.42517592 NA       3
+#> 1     1  a 31 -0.09111298 NA       1
+#> 2     1  a 32  0.22876617 NA       2
+#> 3     1  a 33 -0.34276990 NA       3
+#> 4     1  b 31  1.48188793 NA       1
+#> 5     1  b 32  0.47211188 NA       2
+#> 6     1  b 33  0.42517634 NA       3
 fc <- ilm_forecast(fy, paths, nsim = 200)
 as.data.frame(fc)
 #>   id  t  x  y horizon new_level estimate     mean lower_0.9 upper_0.9

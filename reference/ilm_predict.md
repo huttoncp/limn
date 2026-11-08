@@ -161,8 +161,9 @@ history (`ilm_scores()`'s `history =`). It takes them from, in turn:
   [`ilm_future()`](https://huttoncp.github.io/limn/reference/ilm_future.md)
   built, which record their columns.
 
-A model with time only in its formula, such as a trend or a random slope
-in time, has no correlation over time to say. Rows from
+A model with time only in its formula, such as a trend, a smooth of time
+or a random slope in time, has no correlation over time to say. Rows
+from
 [`ilm_future()`](https://huttoncp.github.io/limn/reference/ilm_future.md)
 say for it; rows made otherwise, or changed by
 [`merge()`](https://rdrr.io/r/base/merge.html) or
@@ -282,14 +283,28 @@ reasoning is not the source's:
 
 - **deterministic trend** (warn): The model trends in `time` (its trend
   terms). Forecasts past the data assume that the trend's slope does not
-  change (the reference), so their intervals leave out any change in it
-  (limn's own reasoning). A random slope in time gives each unit a trend
-  of its own, and forecasts assume that each unit's slope does not
-  change either (limn's own reasoning). Reference: Hyndman and
-  Athanasopoulos (2021), Forecasting: Principles and Practice, 3rd
-  edition, section 10.4. For longer horizons a stochastic trend is safer
-  (the reference): a random walk, ar = ilm_rw1(~ time \| series), lets
-  the level move, and the intervals widen with the horizon.
+  change (the reference, section 10.4), so their intervals leave out any
+  change in it (limn's own reasoning). A random slope in time gives each
+  unit a trend of its own, and forecasts assume that each unit's slope
+  does not change either (limn's own reasoning). Many smooths continue
+  past the data as a straight line, so a wiggle near the end of the data
+  can drive the forecast (Clark and Wells 2023, Methods in Ecology and
+  Evolution 14, section 1); illume's default smooth does (limn's own
+  measurement). Reference: Hyndman and Athanasopoulos (2021),
+  Forecasting: Principles and Practice, 3rd edition, section 10.4, with
+  9.5 ('Understanding ARIMA models') and 9.8 ('Prediction intervals'). A
+  correlation over time can take the trend's place, and each choice is
+  an assumption about the series past the data. If it should return to a
+  level: ar = ilm_ar1(~ time \| series), or ilm_car1() for uneven times,
+  or, when the model has one, its own term. Its forecasts go back to
+  zero, so the forecast goes back to the fixed part, and the spread it
+  adds levels off (the reference, section 9.5, 'Understanding ARIMA
+  models', and section 9.8, 'Prediction intervals', for a series; for a
+  latent term, and for ilm_car1(), limn's own reasoning). A trend left
+  in the fixed part still carries the forecast, and its uncertainty
+  still grows. If the level should be free to move: a random walk, ar =
+  ilm_rw1(~ time \| series), whose intervals keep widening; at longer
+  horizons it is the safer choice (the reference, section 10.4).
 
 - **boundary draws** (fail): Some of the draws of a variance are not
   finite. Its estimate (SD near zero) is at the edge of its range, where
