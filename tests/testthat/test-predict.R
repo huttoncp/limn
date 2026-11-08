@@ -29,6 +29,17 @@ test_that("at the estimates the engine gives illume's own predictions", {
   expect_equal(fitd$estimate[1:2], unname(man))
 })
 
+test_that("a fit with smooths predicts as illume fits it", {
+  ## illume's design leaves a smooth's unpenalised column unnamed
+  set.seed(9); d <- expand.grid(t = 1:20, g = factor(sprintf("g%02d", 1:20)))
+  d$x <- rnorm(nrow(d)); d$z <- rnorm(nrow(d))
+  d$y <- 2 + sin(d$x) + 0.5 * d$z^2 + rnorm(20, 0, 0.3)[d$g] + rnorm(nrow(d), 0, 0.2)
+  fit <- suppressWarnings(illume::ilm_model(y ~ s(x) + s(z) + (1 | g), data = d,
+                                           family = "gaussian", verbose = FALSE))
+  p <- ilm_predict(fit, d[1:6, ], groups = "fitted", uncertainty = "none", target = "link")
+  expect_equal(unname(p$estimate), unname(stats::predict(fit)[1:6]), tolerance = 1e-8)
+})
+
 test_that("a random intercept alone enters a known unit's prediction", {
   ## its design column comes unnamed, which once dropped the effect silently
   set.seed(2); d <- data.frame(g = factor(rep(sprintf("u%02d", 1:20), each = 6)), x = rnorm(120))

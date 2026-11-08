@@ -81,6 +81,53 @@ test_that("a random slope in time is a trend; grouping by time is not", {
   expect_false("lmn_trend" %in% seen)
 })
 
+test_that("a smooth of time is a trend that goes straight on; a periodic smooth is not", {
+  set.seed(9)
+  d <- expand.grid(t = 1:40, id = factor(letters[1:4]))
+  d$y <- 2 + sin(d$t / 6) + rnorm(4, 0, 0.3)[d$id] + rnorm(nrow(d), 0, 0.2)
+  fit <- function(f) suppressMessages(suppressWarnings(illume::ilm_model(
+    f, data = d, family = "gaussian", verbose = FALSE)))
+  fut <- ilm_future(d, time = "t", group = "id", h = 10, response = "y")
+  classes <- function(expr) {
+    seen <- character()
+    withCallingHandlers(expr, warning = function(w) {
+      seen <<- c(seen, class(w)); invokeRestart("muffleWarning") })
+    seen
+  }
+  w <- expect_warning(p <- ilm_forecast(fit(y ~ s(t) + (1 | id)), fut, groups = "fitted",
+                                        uncertainty = "none"), class = "lmn_trend")
+  expect_match(conditionMessage(w), "trends in `t` [(]s[(]t[)], a smooth[)]")
+  expect_match(conditionMessage(w), "straight line.*Clark and Wells 2023.*section 1")
+  ## illume's default smooth goes straight on past the data
+  m <- as.data.frame(p)$mean[fut$id == "a"]
+  expect_lt(max(abs(diff(m, differences = 2))), 1e-8)
+  expect_gt(abs(diff(m)[1]), 1e-3)
+  ## a periodic smooth repeats, so it is no trend
+  expect_false("lmn_trend" %in% classes(ilm_forecast(fit(y ~ s(t, bs = "cc") + (1 | id)), fut,
+                                                     groups = "fitted", uncertainty = "none")))
+})
+
+test_that("the trend advice offers both correlations over time, or the model's own", {
+  set.seed(10)
+  d <- expand.grid(t = 1:30, id = factor(letters[1:4]))
+  d$y <- 2 + 0.05 * d$t + rnorm(4, 0, 0.3)[d$id] + rnorm(nrow(d), 0, 0.3)
+  fit <- function(ar = NULL) suppressMessages(suppressWarnings(illume::ilm_model(
+    y ~ t + (1 | id), data = d, family = "gaussian", ar = ar, verbose = FALSE)))
+  fut <- ilm_future(d, time = "t", group = "id", h = 3, response = "y")
+  msg <- function(f) conditionMessage(expect_warning(
+    ilm_forecast(f, fut, groups = "fitted", uncertainty = "latent", nsim = 20), class = "lmn_trend"))
+  m <- msg(fit())
+  expect_match(m, "return to a level: ar = ilm_ar1[(]~ t [|] id[)], or ilm_car1[(][)] for uneven times")
+  expect_match(m, "free to move: a random walk, ar = ilm_rw1[(]~ t [|] id[)], whose intervals keep widening")
+  expect_match(m, "each choice is an assumption")
+  expect_match(m, "A trend left in the fixed part still carries the forecast")
+  for (ar in c("ar1", "car1")) {
+    m <- msg(fit(get(paste0("ilm_", ar), asNamespace("illume"))(~ t | id)))
+    expect_match(m, paste0("take the trend out, and keep the model's ", ar, " term"))
+    expect_match(m, paste0("ilm_rw1[(]~ t [|] id[)] [(]in place of the model's ", ar, " term"))
+  }
+})
+
 test_that("rows named by time and group are checked for a trend wherever they come from", {
   set.seed(8)
   d <- expand.grid(t = 1:12, id = factor(letters[1:6]))
