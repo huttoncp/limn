@@ -65,6 +65,7 @@ better.</p>
 <span>  naive <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  history <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  period <span class="op">=</span> <span class="fl">1L</span>,</span>
+<span>  alpha <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.02</span>, <span class="fl">0.05</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">9</span><span class="op">/</span><span class="fl">10</span><span class="op">)</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -84,8 +85,8 @@ better.</p>
 
 <dt id="arg-rules">rules<a class="anchor" aria-label="anchor" href="#arg-rules"></a></dt>
 <dd><p>The scoring rules: any of <code>"log"</code>, <code>"crps"</code>, <code>"brier"</code>,
-<code>"pinball"</code>, <code>"interval"</code>, <code>"squared"</code>, <code>"absolute"</code>, <code>"mase"</code> and
-<code>"rmsse"</code>.</p></dd>
+<code>"pinball"</code>, <code>"interval"</code>, <code>"wis"</code>, <code>"squared"</code>, <code>"absolute"</code>, <code>"mase"</code>
+and <code>"rmsse"</code>.</p></dd>
 
 
 <dt id="arg-probs">probs<a class="anchor" aria-label="anchor" href="#arg-probs"></a></dt>
@@ -112,6 +113,12 @@ their scale</em>.</p></dd>
 forecast, the season's length for the seasonal naive.</p></dd>
 
 
+<dt id="arg-alpha">alpha<a class="anchor" aria-label="anchor" href="#arg-alpha"></a></dt>
+<dd><p>For <code>"wis"</code>: the central intervals it weighs, each at level 1 -
+<code>alpha</code>, with <code>alpha</code> strictly between 0 and 1. The default is Bracher et
+al. (2021)'s set, 0.02, 0.05 and 0.1 to 0.9 by 0.1.</p></dd>
+
+
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
 <dd><p>Unused.</p></dd>
 
@@ -120,7 +127,7 @@ forecast, the season's length for the seasonal naive.</p></dd>
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A data frame: the prediction's rows, with one column per score:
 <code>log</code>, <code>crps</code>, <code>brier</code>, <code>pinball_&lt;p&gt;</code> for each p, <code>interval_&lt;level&gt;</code>,
-<code>squared</code>, <code>absolute</code>, <code>mase</code> and <code>rmsse</code>, as asked for. Attribute <code>rules</code>
+<code>wis</code>, <code>squared</code>, <code>absolute</code>, <code>mase</code> and <code>rmsse</code>, as asked for. Attribute <code>rules</code>
 names the score columns, and <code>orientation</code> is "lower is better". For a
 discrete outcome whose CRPS was summed approximately, attributes
 <code>crps_bound</code> and <code>crps_bracket</code> give each row's error estimate and its
@@ -147,6 +154,18 @@ score for a dichotomous event (Table 1, p. 365), as a loss.</p></li>
 (section 6.1, equation (41), p. 370), the "tick" or "check" loss.</p></li>
 <li><p><code>"interval"</code>: <code>(u - l) + (2 / alpha) * (l - y) * (y &lt; l) + (2 / alpha) * (y - u) * (y &gt; u)</code>, for the central interval from <code>l</code> to <code>u</code> at <code>level</code> =
 1 - <code>alpha</code>: the interval score (section 6.2, equation (43), p. 370).</p></li>
+<li><p><code>"wis"</code>: <code>(abs(y - med) / 2 + sum(alpha / 2 * IS)) / (K + 1/2)</code>, with <code>IS</code>
+the interval score above for the central interval at level 1 - <code>alpha</code>,
+for each of the <code>K</code> values of <code>alpha</code>: the weighted interval score of
+Bracher et al. (2021, equations (1) and (2), p. 4). The default <code>alpha</code>
+is theirs: 0.02, 0.05, 0.1, 0.2, ..., 0.9, the median and 11 central
+intervals from 98% to 10%, 23 quantiles in all (p. 4). It is a weighted
+sum of quantile scores, so it is proper, and it needs only the
+prediction's quantiles. With many evenly spaced levels it approaches the
+CRPS (equation (3), p. 4), and with <code>alpha = numeric(0)</code> it is the
+absolute error (p. 4). limn's tests reproduce their worked example
+(section 3.2, p. 7) with the values of its correction (Bracher et al.
+2022, p. 1).</p></li>
 <li><p><code>"squared"</code>: <code>(y - m)^2</code>. The energy score with exponent 2 reduces to
 this, in the opposite orientation (section 4.3, equation (23), p. 367), a
 proper but not strictly proper score.</p></li>
@@ -184,7 +203,14 @@ two, not both.</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
-    <p>Gneiting, T. and Raftery, A. E. (2007). Strictly proper scoring
+    <p>Bracher, J., Ray, E. L., Gneiting, T. and Reich, N. G. (2021).
+Evaluating epidemic forecasts in an interval format. <em>PLOS Computational
+Biology</em> 17(2), e1008618. Section 2.2, equations (1) to (4) (pp. 4-5);
+section 3.2 (p. 7).</p>
+<p>Bracher, J., Ray, E. L., Gneiting, T. and Reich, N. G. (2022).
+Correction: Evaluating epidemic forecasts in an interval format. <em>PLOS
+Computational Biology</em> 18(10), e1010592. P. 1.</p>
+<p>Gneiting, T. and Raftery, A. E. (2007). Strictly proper scoring
 rules, prediction, and estimation. <em>Journal of the American Statistical
 Association</em> 102(477), 359-378. Section 3.1, Example 3 (p. 363); Table 1
 (p. 365); section 4.1, equation (19) (p. 365); section 4.2, equation (20)

@@ -18,6 +18,7 @@ ilm_scores(
   naive = NULL,
   history = NULL,
   period = 1L,
+  alpha = c(0.02, 0.05, 1:9/10),
   ...
 )
 ```
@@ -39,7 +40,8 @@ ilm_scores(
 - rules:
 
   The scoring rules: any of `"log"`, `"crps"`, `"brier"`, `"pinball"`,
-  `"interval"`, `"squared"`, `"absolute"`, `"mase"` and `"rmsse"`.
+  `"interval"`, `"wis"`, `"squared"`, `"absolute"`, `"mase"` and
+  `"rmsse"`.
 
 - probs:
 
@@ -66,6 +68,12 @@ ilm_scores(
   With `history`, the naive forecast's lag: 1 for the naive forecast,
   the season's length for the seasonal naive.
 
+- alpha:
+
+  For `"wis"`: the central intervals it weighs, each at level 1 -
+  `alpha`, with `alpha` strictly between 0 and 1. The default is Bracher
+  et al. (2021)'s set, 0.02, 0.05 and 0.1 to 0.9 by 0.1.
+
 - ...:
 
   Unused.
@@ -73,7 +81,7 @@ ilm_scores(
 ## Value
 
 A data frame: the prediction's rows, with one column per score: `log`,
-`crps`, `brier`, `pinball_<p>` for each p, `interval_<level>`,
+`crps`, `brier`, `pinball_<p>` for each p, `interval_<level>`, `wis`,
 `squared`, `absolute`, `mase` and `rmsse`, as asked for. Attribute
 `rules` names the score columns, and `orientation` is "lower is better".
 For a discrete outcome whose CRPS was summed approximately, attributes
@@ -108,6 +116,19 @@ comparison such as `(y < q)` counts as 1 when true and 0 when false):
   `(u - l) + (2 / alpha) * (l - y) * (y < l) + (2 / alpha) * (y - u) * (y > u)`,
   for the central interval from `l` to `u` at `level` = 1 - `alpha`: the
   interval score (section 6.2, equation (43), p. 370).
+
+- `"wis"`: `(abs(y - med) / 2 + sum(alpha / 2 * IS)) / (K + 1/2)`, with
+  `IS` the interval score above for the central interval at level 1 -
+  `alpha`, for each of the `K` values of `alpha`: the weighted interval
+  score of Bracher et al. (2021, equations (1) and (2), p. 4). The
+  default `alpha` is theirs: 0.02, 0.05, 0.1, 0.2, ..., 0.9, the median
+  and 11 central intervals from 98% to 10%, 23 quantiles in all (p. 4).
+  It is a weighted sum of quantile scores, so it is proper, and it needs
+  only the prediction's quantiles. With many evenly spaced levels it
+  approaches the CRPS (equation (3), p. 4), and with
+  `alpha = numeric(0)` it is the absolute error (p. 4). limn's tests
+  reproduce their worked example (section 3.2, p. 7) with the values of
+  its correction (Bracher et al. 2022, p. 1).
 
 - `"squared"`: `(y - m)^2`. The energy score with exponent 2 reduces to
   this, in the opposite orientation (section 4.3, equation (23), p.
@@ -154,6 +175,15 @@ the error says so and gives the `naive =` call to use instead. Give one
 of the two, not both.
 
 ## References
+
+Bracher, J., Ray, E. L., Gneiting, T. and Reich, N. G. (2021).
+Evaluating epidemic forecasts in an interval format. *PLOS Computational
+Biology* 17(2), e1008618. Section 2.2, equations (1) to (4) (pp. 4-5);
+section 3.2 (p. 7).
+
+Bracher, J., Ray, E. L., Gneiting, T. and Reich, N. G. (2022).
+Correction: Evaluating epidemic forecasts in an interval format. *PLOS
+Computational Biology* 18(10), e1010592. P. 1.
 
 Gneiting, T. and Raftery, A. E. (2007). Strictly proper scoring rules,
 prediction, and estimation. *Journal of the American Statistical

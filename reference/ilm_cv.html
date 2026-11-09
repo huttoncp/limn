@@ -96,7 +96,8 @@ scored on.</p></dd>
 <dt id="arg-rules">rules<a class="anchor" aria-label="anchor" href="#arg-rules"></a></dt>
 <dd><p>The scores, as losses (lower is better): any of <code>"log"</code>, <code>"crps"</code>,
 <code>"brier"</code> (binary outcomes), <code>"pinball"</code> (at <code>probs</code>), <code>"interval"</code> (for the
-central <code>level</code> interval), <code>"squared"</code> (about the predictive mean) and
+central <code>level</code> interval), <code>"wis"</code> (the weighted interval score, over the
+central intervals at levels 1 - <code>alpha</code>), <code>"squared"</code> (about the predictive mean) and
 <code>"absolute"</code> (about the median). Each is computed from the predictive
 mixture. <code><a href="ilm_scores.ilm_pred.html">ilm_scores.ilm_pred()</a></code> defines each rule and gives its source.</p></dd>
 
@@ -131,8 +132,9 @@ the results do not depend on <code>ncores</code>.</p></dd>
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
 <dd><p>For the scores: <code>probs</code>, the pinball score's probabilities
-(default 0.1, 0.5, 0.9), and <code>level</code>, the interval score's coverage
-(default 0.9).</p></dd>
+(default 0.1, 0.5, 0.9); <code>level</code>, the interval score's coverage
+(default 0.9); and <code>alpha</code>, the weighted interval score's intervals
+(default 0.02, 0.05, 0.1, ..., 0.9).</p></dd>
 
 </dl></div>
     <div class="section level2">

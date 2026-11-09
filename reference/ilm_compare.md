@@ -26,7 +26,7 @@ ilm_compare(..., rule = NULL, by = "row", lag = NULL, method = NULL)
   The score to compare: the name of a score column. By default the first
   score in the table, which for a plain data frame is its first column
   named after a rule (`log`, `crps`, `brier`, `pinball_*`, `interval_*`,
-  `squared`, `absolute`, `mase` or `rmsse`).
+  `wis`, `squared`, `absolute`, `mase` or `rmsse`).
 
 - by:
 

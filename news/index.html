@@ -42,6 +42,7 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.0.0.9000" id="limn-0009000">limn 0.0.0.9000<a class="anchor" aria-label="anchor" href="#limn-0009000"></a></h2>
 <ul><li>limn is licensed under the GNU General Public License, version 2 or (at your option) any later version: GPL (&gt;= 2).</li>
+<li>A new scoring rule, <code>"wis"</code>, in <code><a href="https://rdrr.io/pkg/illume/man/ilm_scores.html" class="external-link">ilm_scores()</a></code> and <code><a href="../reference/ilm_cv.html">ilm_cv()</a></code>: the weighted interval score of Bracher et al. (2021, section 2.2). It weighs the median’s absolute error and the interval scores of central intervals at levels 1 - <code>alpha</code>, and needs only the prediction’s quantiles. The default <code>alpha</code> is theirs, the median and 11 intervals (23 quantiles), as forecast hubs report them; give <code>alpha =</code> for other levels. The tests reproduce the paper’s worked example with the values of its correction (Bracher et al. 2022).</li>
 <li>A prediction knows its time and series columns without a correlation over time (<code><a href="../reference/ilm_predict.html">ilm_predict()</a></code>, <em>Time and series columns</em>):
 <ul><li>rows from <code><a href="../reference/ilm_future.html">ilm_future()</a></code> say which they are, so a model with time only in its formula, a trend or a random slope, gets the trend check, and <code>ilm_scores(history = )</code> works for it;</li>
 <li>
