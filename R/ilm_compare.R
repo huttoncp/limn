@@ -72,7 +72,7 @@
 #' @param rule The score to compare: the name of a score column. By default
 #'   the first score in the table, which for a plain data frame is its first
 #'   column named after a rule (`log`, `crps`, `brier`, `pinball_*`,
-#'   `interval_*`, `squared`, `absolute`, `mase` or `rmsse`).
+#'   `interval_*`, `wis`, `squared`, `absolute`, `mase` or `rmsse`).
 #' @param by `"row"`, `"origin"`, or the name of a column the rows are
 #'   clustered by, such as `"group"` or `"fold"`. See *Why the standard error
 #'   depends on `by`*.

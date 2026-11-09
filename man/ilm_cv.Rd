@@ -29,7 +29,8 @@ scored on.}
 
 \item{rules}{The scores, as losses (lower is better): any of \code{"log"}, \code{"crps"},
 \code{"brier"} (binary outcomes), \code{"pinball"} (at \code{probs}), \code{"interval"} (for the
-central \code{level} interval), \code{"squared"} (about the predictive mean) and
+central \code{level} interval), \code{"wis"} (the weighted interval score, over the
+central intervals at levels 1 - \code{alpha}), \code{"squared"} (about the predictive mean) and
 \code{"absolute"} (about the median). Each is computed from the predictive
 mixture. \code{\link[=ilm_scores.ilm_pred]{ilm_scores.ilm_pred()}} defines each rule and gives its source.}
 
@@ -50,8 +51,9 @@ workers become free; the results are the same whatever the number.}
 the results do not depend on \code{ncores}.}
 
 \item{...}{For the scores: \code{probs}, the pinball score's probabilities
-(default 0.1, 0.5, 0.9), and \code{level}, the interval score's coverage
-(default 0.9).}
+(default 0.1, 0.5, 0.9); \code{level}, the interval score's coverage
+(default 0.9); and \code{alpha}, the weighted interval score's intervals
+(default 0.02, 0.05, 0.1, ..., 0.9).}
 }
 \value{
 A data frame of class \code{"ilm_cv"}: one row per test row, with its

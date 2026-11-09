@@ -15,7 +15,7 @@ order, such as the output of the scoring of an \code{"ilm_pred"}. Name them
 \item{rule}{The score to compare: the name of a score column. By default
 the first score in the table, which for a plain data frame is its first
 column named after a rule (\code{log}, \code{crps}, \code{brier}, \verb{pinball_*},
-\verb{interval_*}, \code{squared}, \code{absolute}, \code{mase} or \code{rmsse}).}
+\verb{interval_*}, \code{wis}, \code{squared}, \code{absolute}, \code{mase} or \code{rmsse}).}
 
 \item{by}{\code{"row"}, \code{"origin"}, or the name of a column the rows are
 clustered by, such as \code{"group"} or \code{"fold"}. See \emph{Why the standard error

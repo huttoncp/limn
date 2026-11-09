@@ -2,6 +2,14 @@
 
 * limn is licensed under the GNU General Public License, version 2 or (at
   your option) any later version: GPL (>= 2).
+* A new scoring rule, `"wis"`, in `ilm_scores()` and `ilm_cv()`: the weighted
+  interval score of Bracher et al. (2021, section 2.2). It weighs the median's
+  absolute error and the interval scores of central intervals at levels
+  1 - `alpha`, and needs only the prediction's quantiles. The default `alpha`
+  is theirs, the median and 11 intervals (23 quantiles), as forecast hubs
+  report them; give `alpha =` for other levels. The tests reproduce the
+  paper's worked example with the values of its correction (Bracher et al.
+  2022).
 * A prediction knows its time and series columns without a correlation over
   time (`ilm_predict()`, *Time and series columns*):
   - rows from `ilm_future()` say which they are, so a model with time only in

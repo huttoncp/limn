@@ -33,7 +33,8 @@
 #' @param folds Folds from [ilm_folds()] built on `data`.
 #' @param rules The scores, as losses (lower is better): any of `"log"`, `"crps"`,
 #'   `"brier"` (binary outcomes), `"pinball"` (at `probs`), `"interval"` (for the
-#'   central `level` interval), `"squared"` (about the predictive mean) and
+#'   central `level` interval), `"wis"` (the weighted interval score, over the
+#'   central intervals at levels 1 - `alpha`), `"squared"` (about the predictive mean) and
 #'   `"absolute"` (about the median). Each is computed from the predictive
 #'   mixture. [ilm_scores.ilm_pred()] defines each rule and gives its source.
 #' @param groups How the random effects enter the predictions, as in
@@ -47,8 +48,9 @@
 #' @param seed Seed; each fold's draws use their own seed derived from it, so
 #'   the results do not depend on `ncores`.
 #' @param ... For the scores: `probs`, the pinball score's probabilities
-#'   (default 0.1, 0.5, 0.9), and `level`, the interval score's coverage
-#'   (default 0.9).
+#'   (default 0.1, 0.5, 0.9); `level`, the interval score's coverage
+#'   (default 0.9); and `alpha`, the weighted interval score's intervals
+#'   (default 0.02, 0.05, 0.1, ..., 0.9).
 #' @return A data frame of class `"ilm_cv"`: one row per test row, with its
 #'   fold, its row in `data`, for rolling folds its origin and horizon, and one
 #'   column per score. A fold whose refit or prediction failed has `NA` scores
