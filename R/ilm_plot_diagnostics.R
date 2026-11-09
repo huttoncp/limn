@@ -231,7 +231,7 @@ lmn_default_rule <- function(tab, rule) {
   if (!is.null(rule)) return(rule)
   rule <- attr(tab, "rules")[1]
   if (is.null(rule))
-    rule <- grep("^(log|crps|brier|pinball_.+|interval_.+|squared|absolute|mase|rmsse)$",
+    rule <- grep("^(log|crps|brier|pinball_.+|interval_.+|wis|squared|absolute|mase|rmsse)$",
                  names(tab), value = TRUE)[1]
   if (is.null(rule) || is.na(rule))
     stop("name the score with `rule`.", call. = FALSE)

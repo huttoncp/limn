@@ -13,6 +13,7 @@
   naive = NULL,
   history = NULL,
   period = 1L,
+  alpha = c(0.02, 0.05, 1:9/10),
   ...
 )
 }
@@ -23,8 +24,8 @@
 \item{y}{The observed outcomes, one per row of the prediction.}
 
 \item{rules}{The scoring rules: any of \code{"log"}, \code{"crps"}, \code{"brier"},
-\code{"pinball"}, \code{"interval"}, \code{"squared"}, \code{"absolute"}, \code{"mase"} and
-\code{"rmsse"}.}
+\code{"pinball"}, \code{"interval"}, \code{"wis"}, \code{"squared"}, \code{"absolute"}, \code{"mase"}
+and \code{"rmsse"}.}
 
 \item{probs}{The probabilities of the pinball loss.}
 
@@ -40,12 +41,16 @@ their scale}.}
 \item{period}{With \code{history}, the naive forecast's lag: 1 for the naive
 forecast, the season's length for the seasonal naive.}
 
+\item{alpha}{For \code{"wis"}: the central intervals it weighs, each at level 1 -
+\code{alpha}, with \code{alpha} strictly between 0 and 1. The default is Bracher et
+al. (2021)'s set, 0.02, 0.05 and 0.1 to 0.9 by 0.1.}
+
 \item{...}{Unused.}
 }
 \value{
 A data frame: the prediction's rows, with one column per score:
 \code{log}, \code{crps}, \code{brier}, \verb{pinball_<p>} for each p, \verb{interval_<level>},
-\code{squared}, \code{absolute}, \code{mase} and \code{rmsse}, as asked for. Attribute \code{rules}
+\code{wis}, \code{squared}, \code{absolute}, \code{mase} and \code{rmsse}, as asked for. Attribute \code{rules}
 names the score columns, and \code{orientation} is "lower is better". For a
 discrete outcome whose CRPS was summed approximately, attributes
 \code{crps_bound} and \code{crps_bracket} give each row's error estimate and its
@@ -78,6 +83,18 @@ score for a dichotomous event (Table 1, p. 365), as a loss.
 (section 6.1, equation (41), p. 370), the "tick" or "check" loss.
 \item \code{"interval"}: \code{(u - l) + (2 / alpha) * (l - y) * (y < l) + (2 / alpha) * (y - u) * (y > u)}, for the central interval from \code{l} to \code{u} at \code{level} =
 1 - \code{alpha}: the interval score (section 6.2, equation (43), p. 370).
+\item \code{"wis"}: \code{(abs(y - med) / 2 + sum(alpha / 2 * IS)) / (K + 1/2)}, with \code{IS}
+the interval score above for the central interval at level 1 - \code{alpha},
+for each of the \code{K} values of \code{alpha}: the weighted interval score of
+Bracher et al. (2021, equations (1) and (2), p. 4). The default \code{alpha}
+is theirs: 0.02, 0.05, 0.1, 0.2, ..., 0.9, the median and 11 central
+intervals from 98\% to 10\%, 23 quantiles in all (p. 4). It is a weighted
+sum of quantile scores, so it is proper, and it needs only the
+prediction's quantiles. With many evenly spaced levels it approaches the
+CRPS (equation (3), p. 4), and with \code{alpha = numeric(0)} it is the
+absolute error (p. 4). limn's tests reproduce their worked example
+(section 3.2, p. 7) with the values of its correction (Bracher et al.
+2022, p. 1).
 \item \code{"squared"}: \code{(y - m)^2}. The energy score with exponent 2 reduces to
 this, in the opposite orientation (section 4.3, equation (23), p. 367), a
 proper but not strictly proper score.
@@ -135,6 +152,15 @@ sc <- ilm_naive_scale(train, time = "t", group = "site", response = "y")
 all.equal(s$mase, ilm_scores(fc, test$y, rules = "mase", naive = sc)$mase)
 }
 \references{
+Bracher, J., Ray, E. L., Gneiting, T. and Reich, N. G. (2021).
+Evaluating epidemic forecasts in an interval format. \emph{PLOS Computational
+Biology} 17(2), e1008618. Section 2.2, equations (1) to (4) (pp. 4-5);
+section 3.2 (p. 7).
+
+Bracher, J., Ray, E. L., Gneiting, T. and Reich, N. G. (2022).
+Correction: Evaluating epidemic forecasts in an interval format. \emph{PLOS
+Computational Biology} 18(10), e1010592. P. 1.
+
 Gneiting, T. and Raftery, A. E. (2007). Strictly proper scoring
 rules, prediction, and estimation. \emph{Journal of the American Statistical
 Association} 102(477), 359-378. Section 3.1, Example 3 (p. 363); Table 1

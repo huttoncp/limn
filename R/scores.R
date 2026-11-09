@@ -16,6 +16,9 @@
 ##   pinball   quantile loss at each of `probs`
 ##   interval  the interval score for the central `level` interval
 ##             (Gneiting and Raftery 2007, section 6.2, equation (43))
+##   wis       the weighted interval score over the central intervals at
+##             levels 1 - `alpha`, with the median (Bracher et al. 2021,
+##             equations (1) and (2), p. 4)
 ##   squared   (y - predictive mean)^2
 ##   absolute  |y - predictive median|, the point forecast absolute error suits
 ##   mase      |y - median| / q, q the series' in-sample mean absolute naive
@@ -23,13 +26,19 @@
 ##             mean over rows is the MASE
 ##   rmsse     (y - mean)^2 / q2, q2 the mean squared naive error: the square
 ##             root of the mean over rows is the RMSSE
-lmn_rules <- c("log", "crps", "brier", "pinball", "interval", "squared", "absolute",
+lmn_rules <- c("log", "crps", "brier", "pinball", "interval", "wis", "squared", "absolute",
                "mase", "rmsse")
+
+## The weighted interval score's default levels: the median and the 11 central
+## intervals at alpha = 0.02, 0.05, 0.1, 0.2, ..., 0.9, as the COVID-19
+## Forecast Hub evaluates them (Bracher et al. 2021, p. 4).
+lmn_wis_alpha <- c(0.02, 0.05, 1:9 / 10)
 
 #' @keywords internal
 #' @noRd
 lmn_pred_scores <- function(pred, y, rules = c("log", "crps"),
-                            probs = c(0.1, 0.5, 0.9), level = 0.9, naive = NULL) {
+                            probs = c(0.1, 0.5, 0.9), level = 0.9, naive = NULL,
+                            alpha = lmn_wis_alpha) {
   lmn_check_response_pred(pred)
   n <- lmn_pred_n(pred)
   y <- lmn_check_outcome(pred, y, n)
@@ -41,6 +50,13 @@ lmn_pred_scores <- function(pred, y, rules = c("log", "crps"),
     stop("`level` must be one number between 0 and 1.", call. = FALSE)
   if (!is.numeric(probs) || any(probs <= 0 | probs >= 1))
     stop("`probs` must be probabilities strictly between 0 and 1.", call. = FALSE)
+  if ("wis" %in% rules) {
+    if (!is.numeric(alpha) || anyNA(alpha) || any(alpha <= 0 | alpha >= 1))
+      stop("`alpha` must be numbers strictly between 0 and 1: each central interval's ",
+           "level is 1 - alpha.", call. = FALSE)
+    if (anyDuplicated(alpha))
+      stop("`alpha` names the same interval more than once.", call. = FALSE)
+  }
 
   scaled <- intersect(rules, c("mase", "rmsse"))
   if (length(scaled)) sc <- lmn_row_scales(pred, naive)
@@ -79,6 +95,7 @@ lmn_pred_scores <- function(pred, y, rules = c("log", "crps"),
                  avg_sc * as.numeric(v) },
         brier = lmn_score_brier(sub, yo),
         interval = lmn_score_interval(sub, yo, level),
+        wis = lmn_score_wis(sub, yo, alpha),
         squared = (yo - lmn_pred_mean(sub))^2,
         absolute = abs(yo - lmn_pred_quantile(sub, 0.5)),
         mase = abs(yo - lmn_pred_quantile(sub, 0.5)) / sc$abs[ok],
@@ -720,4 +737,20 @@ lmn_score_interval <- function(pred, y, level) {
   l <- lmn_pred_quantile(pred, alpha / 2)
   u <- lmn_pred_quantile(pred, 1 - alpha / 2)
   (u - l) + (2 / alpha) * (l - y) * (y < l) + (2 / alpha) * (y - u) * (y > u)
+}
+
+## The weighted interval score (Bracher et al. 2021, equation (1), p. 4) with
+## their weights (equation (2)): w0 = 1/2 on the absolute error of the median
+## m, and w_k = alpha_k / 2 on the interval score of the central 1 - alpha_k
+## interval, all over K + 1/2:
+##   WIS = (|y - m| / 2 + sum_k (alpha_k / 2) IS_alpha_k) / (K + 1/2).
+## With no intervals (K = 0) it is the absolute error (p. 4). It equals the
+## mean of twice the quantile scores at the 2K + 1 quantiles the intervals and
+## the median use (equation (4), p. 5), which a test checks.
+#' @keywords internal
+#' @noRd
+lmn_score_wis <- function(pred, y, alpha) {
+  s <- 0.5 * abs(y - lmn_pred_quantile(pred, 0.5))
+  for (a in alpha) s <- s + (a / 2) * lmn_score_interval(pred, y, 1 - a)
+  s / (length(alpha) + 0.5)
 }
